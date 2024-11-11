@@ -8,7 +8,7 @@ const LandingWrapper = styled.div`
 `;
 
 const LeftSection = styled.div`
-  flex: 2;
+  flex: 1.5;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -65,22 +65,22 @@ const Button = styled.button`
 `;
 
 function LandingPage() {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
 
-    return (
-        <LandingWrapper>
-            <LeftSection>
-                <TextBackground>
-                    <Heading>Welcome to Presto!</Heading>
-                    <Text>Lighter, more enjoyable, more funny for making presentations</Text>
-                </TextBackground>
-            </LeftSection>
-            <RightSection>
-                <Button onClick={() => navigate('/login')}>Login</Button>
-                <Button onClick={() => navigate('/register')}>Register</Button>
-            </RightSection>
-        </LandingWrapper>
-    );
+  return (
+    <LandingWrapper>
+      <LeftSection>
+        <TextBackground>
+          <Heading>Welcome to Presto!</Heading>
+          <Text>Lighter, more enjoyable, more funny for making presentations</Text>
+        </TextBackground>
+      </LeftSection>
+      <RightSection>
+        <Button onClick={() => navigate('/login')}>Login</Button>
+        <Button onClick={() => navigate('/register')}>Register</Button>
+      </RightSection>
+    </LandingWrapper>
+  );
 }
 
 export default LandingPage;

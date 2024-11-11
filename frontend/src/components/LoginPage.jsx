@@ -89,77 +89,78 @@ const Button = styled.button`
 const ErrorMessage = styled.p`
   color: red;
   font-weight: bold;
+  margin-left:30px;
 `;
 
 
 function LoginPage() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState(null);
-    const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            const response = await fetch('http://localhost:5005/admin/auth/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    email,
-                    password,
-                })
-            });
-            const data = await response.json();
-            if (response.ok) {
-                localStorage.setItem('token', data.token)
-                console.log(data.token)
-                navigate('/dashboard');
-            } else {
-                setError(data.error || 'Invalid email or password');
-            }
-        } catch (err) {
-            setError('An error occurred. Please try again.');
-        }
-    };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch('http://localhost:5005/admin/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        localStorage.setItem('token', data.token)
+        console.log(data.token)
+        navigate('/dashboard');
+      } else {
+        setError(data.error || 'Invalid email or password');
+      }
+    } catch (err) {
+      setError('An error occurred. Please try again.');
+    }
+  };
 
-    const handleBack = () => {
-        navigate('/');
-    };
+  const handleBack = () => {
+    navigate('/');
+  };
 
-    return (
-        <StyleDiv>
-            <LeftSection>
-                <TextBackground>
-                    <Heading>Welcome to Presto!</Heading>
-                    <Text>Lighter, more enjoyable, more funny for making presentations</Text>
-                </TextBackground>
-            </LeftSection>
-            <RightSection>
-                <H2>Login Form</H2>
-                <form onSubmit={handleSubmit}>
-                    <Input
-                        type="email"
-                        placeholder="Email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                    />
-                    <Input
-                        type="password"
-                        placeholder="Password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                    />
-                    {error && <ErrorMessage>{error}</ErrorMessage>}
-                    <Button type="submit">Login</Button>
-                    <Button onClick={handleBack} type="button">Back</Button>
-                </form>
-            </RightSection>
-        </StyleDiv >
-    );
+  return (
+    <StyleDiv>
+      <LeftSection>
+        <TextBackground>
+          <Heading>Welcome to Presto!</Heading>
+          <Text>Lighter, more enjoyable, more funny for making presentations</Text>
+        </TextBackground>
+      </LeftSection>
+      <RightSection>
+        <H2>Login Form</H2>
+        <form onSubmit={handleSubmit}>
+          <Input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <Input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          {error && <ErrorMessage>{error}</ErrorMessage>}
+          <Button type="submit">Login</Button>
+          <Button onClick={handleBack} type="button">Back</Button>
+        </form>
+      </RightSection>
+    </StyleDiv >
+  );
 }
 
 export default LoginPage;

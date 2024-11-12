@@ -150,7 +150,6 @@ function Dashboard() {
                         <div>{presentation.name}</div>
                         <div>{presentation.thumbnail ? <img src={URL.createObjectURL(presentation.thumbnail)} alt="Thumbnail" width="50" height="50" /> : <div style={{ width: '50px', height: '50px', backgroundColor: 'gray' }} />}</div>
                         <div>{presentation.description}</div>
-                        <div>Slides: {presentation.slides}</div>
                     </PresentationCard>
                 ))}
             </PresentationGrid>

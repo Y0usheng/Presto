@@ -2,41 +2,54 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import 'w3-css/w3.css';
+import { Card, CardContent, CardMedia, Typography, Button } from '@mui/material';
 
 const DashboardWrapper = styled.div`
-  padding: 20px;
+    padding: 20px;
+`;
+
+const Header = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+`;
+
+const Greeting = styled.h2`
+    margin: 0;
 `;
 
 const PresentationGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 20px;
-`;
-
-const PresentationCard = styled.div`
-  width: 200px;
-  height: 100px;
-  border: 1px solid #ccc;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 20px;
 `;
 
 const NewPresentationButton = styled.button`
-  margin-bottom: 20px;
-  padding: 10px 20px;
-  font-size: 16px;
-  cursor: pointer;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  &:hover {
-    background-color: #0056b3;
-  }
+    margin-bottom: 20px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    &:hover {
+        background-color: #0056b3;
+    }
+`;
+
+const LogoutButton = styled.button`
+    padding: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    background-color: #f44336;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    &:hover {
+    background-color: #d32f2f;
+    }
 `;
 
 function Dashboard() {
@@ -103,6 +116,11 @@ function Dashboard() {
 
     return (
         <DashboardWrapper>
+            <Header>
+                <Greeting>Hello!</Greeting>
+                <LogoutButton onClick={handleLogout}>Logout</LogoutButton>
+            </Header>
+
             <NewPresentationButton onClick={() => (document.getElementById('newPresentationModal').style.display = 'block')}>New Presentation</NewPresentationButton>
 
             <div id="newPresentationModal" className="w3-modal">
@@ -144,16 +162,30 @@ function Dashboard() {
                 </div>
             </div>
 
-            <PresentationGrid>
-                {presentations.map((presentation) => (
-                    <PresentationCard key={presentation.id} onClick={() => navigate(`/presentation/${presentation.id}`)}>
-                        <div>{presentation.name}</div>
-                        <div>{presentation.thumbnail ? <img src={URL.createObjectURL(presentation.thumbnail)} alt="Thumbnail" width="50" height="50" /> : <div style={{ width: '50px', height: '50px', backgroundColor: 'gray' }} />}</div>
-                        <div>{presentation.description}</div>
-                    </PresentationCard>
-                ))}
-            </PresentationGrid>
-            <button onClick={handleLogout}>Logout</button>
+            {presentations.length === 0 ? (
+                <p>There is no project, let's begin your first project!</p>
+            ) : (
+                <PresentationGrid>
+                    {presentations.map((presentation) => (
+                        <Card key={presentation.id} onClick={() => navigate(`/presentation/${presentation.id}`)} style={{ cursor: 'pointer' }}>
+                            <CardMedia
+                                component="img"
+                                height="140"
+                                image={presentation.thumbnail ? URL.createObjectURL(presentation.thumbnail) : 'https://via.placeholder.com/300'}
+                                alt="Thumbnail"
+                            />
+                            <CardContent>
+                                <Typography gutterBottom variant="h5" component="div">
+                                    {presentation.name}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                    {presentation.description || 'No description provided'}
+                                </Typography>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </PresentationGrid>
+            )}
         </DashboardWrapper>
     );
 }

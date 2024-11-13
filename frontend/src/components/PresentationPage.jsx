@@ -1,3 +1,14 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import styled from 'styled-components';
+import { Button, TextField, Modal, Box } from '@mui/material';
+
+const Header = styled.div`
+    display: flex;
+    justify-content: space - between;
+    align-items: center;
+    margin-bottom: 20px;
+`;
 
 function PresentationPage() {
     const { id } = useParams();

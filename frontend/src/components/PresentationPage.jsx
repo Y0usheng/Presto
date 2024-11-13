@@ -10,6 +10,19 @@ const Header = styled.div`
     margin-bottom: 20px;
 `;
 
+const SlideNumber = styled.div`
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 50px;
+    height: 50px;
+    font-size: 1em;
+    color: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+`;
+
 function PresentationPage() {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -204,6 +217,51 @@ function PresentationPage() {
         }
     };
 
+    const handleDeleteSlide = async () => {
+        if (slides.length === 1) {
+            alert('Cannot delete the only slide. Please delete the presentation instead.');
+            return;
+        }
+
+        const newSlides = slides.filter((_, index) => index !== currentSlideIndex);
+        setSlides(newSlides);
+
+        const updatedPresentation = { ...presentation, slides: newSlides, slidesCount: newSlides.length };
+
+        try {
+            const response = await fetch(`http://localhost:5005/store`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+            });
+            if (response.ok) {
+                const data = await response.json();
+                const updatedStore = data.store.map((p) => (p.id === parseInt(id) ? updatedPresentation : p));
+
+                const updateResponse = await fetch(`http://localhost:5005/store`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${localStorage.getItem('token')}`,
+                    },
+                    body: JSON.stringify({ ...data, store: updatedStore }),
+                });
+
+                if (updateResponse.ok) {
+                    setPresentation(updatedPresentation);
+                    if (currentSlideIndex > 0) {
+                        setCurrentSlideIndex(currentSlideIndex - 1);
+                    }
+                } else {
+                    console.error('Failed to update presentation');
+                }
+            }
+        } catch (error) {
+            console.error('Error deleting slide:', error);
+        }
+    };
+
     const handleSlideNavigation = (direction) => {
         if (direction === 'next' && currentSlideIndex < slides.length - 1) {
             setCurrentSlideIndex(currentSlideIndex + 1);
@@ -228,11 +286,12 @@ function PresentationPage() {
             <p>{presentation?.description}</p>
 
             <input type="file" onChange={handleThumbnailUpdate} />
-
+            <br></br>
             <Button variant="outlined" onClick={handleAddSlide}>Add Slide</Button>
+            <Button variant="outlined" color="error" onClick={handleDeleteSlide} style={{ marginLeft: '10px' }}>Delete Slide</Button>
             <div>
                 {slides.length > 0 && (
-                    <div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', position: 'relative' }}>
                         <div>
                             <Button
                                 disabled={currentSlideIndex === 0}
@@ -250,7 +309,12 @@ function PresentationPage() {
                         </div>
                         <div>
                             <p>{slides[currentSlideIndex]?.content}</p>
+                            <p>{slides[currentSlideIndex]?.content}</p>
+                            <p>{slides[currentSlideIndex]?.content}</p>
+                            <p>{slides[currentSlideIndex]?.content}</p>
                         </div>
+                        <br></br>
+                        <SlideNumber>{currentSlideIndex + 1}</SlideNumber>
                     </div>
                 )}
             </div>

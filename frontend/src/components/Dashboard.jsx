@@ -34,15 +34,15 @@ const CardStyle = styled(Card)`
 `;
 
 const CustomCardContent = styled(CardContent)`
-  padding: 2px;
+  padding: 2px !important;
   "&:last-child": {
-    paddingBottom: 3px;
+    paddingBottom: 3px !important;
   }
 `;
 
 const TightTypography = styled(Typography)`
-  margin-bottom: 2px;
-  line-height: 1; 
+  margin-bottom: 2px !important;
+  line-height: 1 !important; 
 `;
 
 const NewPresentationButton = styled.button`
@@ -188,11 +188,14 @@ function Dashboard() {
                 <PresentationGrid>
                     {presentations.map((presentation) => (
                         <CardStyle key={presentation.id} onClick={() => navigate(`/presentation/${presentation.id}`)} style={{ cursor: 'pointer' }}>
-                            <CardMedia
-                                component="img"
-                                height="120"
-                                image={presentation.thumbnail ? URL.createObjectURL(presentation.thumbnail) : 'https://via.placeholder.com/100x20'}
-                                alt="Thumbnail"
+                            <div
+                                style={{
+                                    backgroundImage: `url(${typeof presentation.thumbnail === 'object' ? URL.createObjectURL(presentation.thumbnail) : presentation.thumbnail || 'https://via.placeholder.com/300'})`,
+                                    backgroundSize: 'cover',
+                                    backgroundPosition: 'center',
+                                    height: '50%',
+                                    width: '100%',
+                                }}
                             />
                             <CustomCardContent>
                                 <TightTypography gutterBottom variant="h7" component="div">
@@ -200,6 +203,9 @@ function Dashboard() {
                                 </TightTypography>
                                 <TightTypography variant="body2" color="text.secondary">
                                     {presentation.description || 'No description provided'}
+                                </TightTypography>
+                                <TightTypography variant="body2" color="text.secondary">
+                                    Slides: {presentation.slidesCount || 0}
                                 </TightTypography>
                             </CustomCardContent>
                         </CardStyle>

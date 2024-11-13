@@ -17,6 +17,8 @@ function PresentationPage() {
     const [editTitleOpen, setEditTitleOpen] = useState(false);
     const [newTitle, setNewTitle] = useState('');
     const [newThumbnail, setNewThumbnail] = useState(null);
+    const [slides, setSlides] = useState([]);
+    const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
 
     const handleDelete = async () => {
         if (window.confirm('Are you sure?')) {
@@ -76,6 +78,8 @@ function PresentationPage() {
 
                     if (foundPresentation) {
                         setPresentation(foundPresentation);
+                        setNewTitle(foundPresentation.name);
+                        setSlides(foundPresentation.slides || []);
                     } else {
                         console.error('Presentation not found');
                     }
@@ -127,36 +131,84 @@ function PresentationPage() {
             const reader = new FileReader();
             reader.onloadend = async () => {
                 const base64String = reader.result;
-                try {
-                    const response = await fetch(`http://localhost:5005/store`, {
-                        headers: {
-                            'Content-Type': 'application/json',
-                            Authorization: `Bearer ${localStorage.getItem('token')}`,
-                        },
-                    });
-                    if (response.ok) {
-                        const data = await response.json();
-                        const updatedStore = data.store.map((p) =>
-                            p.id === parseInt(id) ? { ...p, thumbnail: base64String } : p
-                        );
-                        const updateResponse = await fetch(`http://localhost:5005/store`, {
-                            method: 'PUT',
+                if (window.confirm('Are you sure you want to change the thumbnail?')) {
+                    try {
+                        const response = await fetch(`http://localhost:5005/store`, {
                             headers: {
                                 'Content-Type': 'application/json',
                                 Authorization: `Bearer ${localStorage.getItem('token')}`,
                             },
-                            body: JSON.stringify({ ...data, store: updatedStore }),
                         });
-                        if (updateResponse.ok) {
-                            setPresentation((prev) => ({ ...prev, thumbnail: base64String }));
-                            setNewThumbnail(base64String);
+                        if (response.ok) {
+                            const data = await response.json();
+                            const updatedStore = data.store.map((p) =>
+                                p.id === parseInt(id) ? { ...p, thumbnail: base64String } : p
+                            );
+                            const updateResponse = await fetch(`http://localhost:5005/store`, {
+                                method: 'PUT',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                                },
+                                body: JSON.stringify({ ...data, store: updatedStore }),
+                            });
+                            if (updateResponse.ok) {
+                                setPresentation((prev) => ({ ...prev, thumbnail: base64String }));
+                                setNewThumbnail(base64String);
+                            }
                         }
+                    } catch (error) {
+                        console.error('Error updating thumbnail:', error);
                     }
-                } catch (error) {
-                    console.error('Error updating thumbnail:', error);
                 }
             };
             reader.readAsDataURL(file);
+        }
+    };
+
+    const handleAddSlide = async () => {
+        try {
+            const newSlides = [...slides, { content: `Slide ${slides.length + 1}` }];
+            setSlides(newSlides);
+
+            const updatedPresentation = { ...presentation, slides: newSlides, slidesCount: newSlides.length };
+            setPresentation(updatedPresentation);
+
+            const response = await fetch(`http://localhost:5005/store`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+            });
+            if (response.ok) {
+                const data = await response.json();
+                const updatedStore = data.store.map((p) => (p.id === parseInt(id) ? updatedPresentation : p));
+
+                const updateResponse = await fetch(`http://localhost:5005/store`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${localStorage.getItem('token')}`,
+                    },
+                    body: JSON.stringify({ ...data, store: updatedStore }),
+                });
+
+                if (updateResponse.ok) {
+                    setPresentation(updatedPresentation);
+                } else {
+                    console.error('Failed to update presentation');
+                }
+            }
+        } catch (error) {
+            console.error('Error adding slide:', error);
+        }
+    };
+
+    const handleSlideNavigation = (direction) => {
+        if (direction === 'next' && currentSlideIndex < slides.length - 1) {
+            setCurrentSlideIndex(currentSlideIndex + 1);
+        } else if (direction === 'prev' && currentSlideIndex > 0) {
+            setCurrentSlideIndex(currentSlideIndex - 1);
         }
     };
 
@@ -174,8 +226,36 @@ function PresentationPage() {
                 </div>
             </Header>
             <p>{presentation?.description}</p>
-            <Button variant="outlined" onClick={() => navigate('/dashboard')}>Back</Button>
+
             <input type="file" onChange={handleThumbnailUpdate} />
+
+            <Button variant="outlined" onClick={handleAddSlide}>Add Slide</Button>
+            <div>
+                {slides.length > 0 && (
+                    <div>
+                        <div>
+                            <Button
+                                disabled={currentSlideIndex === 0}
+                                onClick={() => handleSlideNavigation('prev')}
+                            >
+                                Previous
+                            </Button>
+                            <span>Slide {currentSlideIndex + 1} of {slides.length}</span>
+                            <Button
+                                disabled={currentSlideIndex === slides.length - 1}
+                                onClick={() => handleSlideNavigation('next')}
+                            >
+                                Next
+                            </Button>
+                        </div>
+                        <div>
+                            <p>{slides[currentSlideIndex]?.content}</p>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            <Button variant="outlined" onClick={() => navigate('/dashboard')}>Back</Button>
             <Modal open={editTitleOpen} onClose={() => setEditTitleOpen(false)}>
                 <Box
                     sx={{

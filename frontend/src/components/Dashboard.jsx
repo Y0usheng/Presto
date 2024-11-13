@@ -112,7 +112,10 @@ function Dashboard() {
 
     const handleCreatePresentation = async () => {
         try {
-            const updatedPresentations = [...presentations, { ...newPresentation, id: presentations.length + 1 }];
+            const updatedPresentations = [...presentations, {
+                ...newPresentation, id: presentations.length + 1, slides: [{ content: "Default Slide 1" }],
+                slidesCount: 1,
+            }];
 
             const response = await fetch('http://localhost:5005/store', {
                 method: 'PUT',

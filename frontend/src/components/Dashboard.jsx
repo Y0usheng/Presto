@@ -113,7 +113,7 @@ function Dashboard() {
     const handleCreatePresentation = async () => {
         try {
             const updatedPresentations = [...presentations, {
-                ...newPresentation, id: presentations.length + 1, slides: [{ content: "Default Slide 1" }],
+                ...newPresentation, id: presentations.length + 1, slides: [{ page: "Default Slide 1" }],
                 slidesCount: 1,
             }];
 

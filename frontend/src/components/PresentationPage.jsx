@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { Button, TextField, Modal, Box } from '@mui/material';
+import { AppBar, Toolbar, Typography, IconButton, Button, TextField, Modal, Box } from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
-const Header = styled.div`
-    display: flex;
-    justify-content: space - between;
-    align-items: center;
-    margin-bottom: 20px;
+const SlideArea = styled.div`
+  width: 400px;
+  height: 400px;
+  border: 1px solid #ccc;
+  position: relative;
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `;
 
 const SlideNumber = styled.div`
@@ -29,10 +34,16 @@ function PresentationPage() {
     const [presentation, setPresentation] = useState(null);
     const [editTitleOpen, setEditTitleOpen] = useState(false);
     const [newTitle, setNewTitle] = useState('');
+    const [thumbnailModalOpen, setThumbnailModalOpen] = useState(false);
     const [newThumbnail, setNewThumbnail] = useState(null);
     const [slides, setSlides] = useState([]);
     const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
     const [elements, setElements] = useState([]);
+    const [addTextModalOpen, setAddTextModalOpen] = useState(false);
+    const [textContent, setTextContent] = useState('');
+    const [textSize, setTextSize] = useState(50);
+    const [fontSize, setFontSize] = useState(1);
+    const [textColor, setTextColor] = useState('#000000');
 
     const handleDelete = async () => {
         if (window.confirm('Are you sure?')) {
@@ -169,6 +180,7 @@ function PresentationPage() {
                             if (updateResponse.ok) {
                                 setPresentation((prev) => ({ ...prev, thumbnail: base64String }));
                                 setNewThumbnail(base64String);
+                                setThumbnailModalOpen(false);
                             }
                         }
                     } catch (error) {
@@ -182,7 +194,7 @@ function PresentationPage() {
 
     const handleAddSlide = async () => {
         try {
-            const newSlides = [...slides, { content: `Slide ${slides.length + 1}` }];
+            const newSlides = [...slides, { page: `Slide ${slides.length + 1}` }];
             setSlides(newSlides);
 
             const updatedPresentation = { ...presentation, slides: newSlides, slidesCount: newSlides.length };
@@ -272,48 +284,111 @@ function PresentationPage() {
     };
 
     const handleAddTextElement = () => {
-        const newElement = {
-            type: 'text',
-            size: 50,
-            text: 'New Text',
-            fontSize: 1,
-            color: '#000000',
-            position: { x: 0, y: 0 },
-            layer: elements.length,
-        };
-        const newElements = [...elements, newElement];
-        setElements(newElements);
+        setAddTextModalOpen(true);
+    };
+
+    const handleAddText = async () => {
+        if (textContent.trim() === '') return;
 
         const updatedSlides = slides.map((slide, index) =>
-            index === currentSlideIndex ? { ...slide, elements: newElements } : slide
+            index === currentSlideIndex
+                ? {
+                    ...slide,
+                    elements: [
+                        ...(slide.elements || []),
+                        {
+                            type: 'text',
+                            size: textSize,
+                            text: textContent,
+                            fontSize: fontSize,
+                            color: textColor,
+                            position: { x: 0, y: 0 },
+                            layer: (slide.elements || []).length,
+                        },
+                    ],
+                }
+                : slide
         );
+
         setSlides(updatedSlides);
+        setAddTextModalOpen(false);
+        setTextContent('');
+        setTextSize(50);
+        setFontSize(1);
+        setTextColor('#000000');
+
+        try {
+            const response = await fetch(`http://localhost:5005/store`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+            });
+            if (response.ok) {
+                const data = await response.json();
+                const updatedStore = data.store.map((p) =>
+                    p.id === parseInt(id)
+                        ? { ...p, slides: updatedSlides }
+                        : p
+                );
+
+                const updateResponse = await fetch(`http://localhost:5005/store`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${localStorage.getItem('token')}`,
+                    },
+                    body: JSON.stringify({ ...data, store: updatedStore }),
+                });
+
+                if (!updateResponse.ok) {
+                    console.error('Failed to update presentation');
+                }
+            }
+        } catch (error) {
+            console.error('Error adding text:', error);
+        }
     };
+
 
     return (
         <div>
-            <Header>
-                <h2>{presentation?.name}</h2>
-                <div>
-                    <Button variant="outlined" onClick={() => setEditTitleOpen(true)}>
-                        Edit Title
+            <AppBar position="static" color="default">
+                <Toolbar>
+                    <IconButton edge="start" color="inherit" onClick={() => navigate('/dashboard')} aria-label="back">
+                        <ArrowBackIcon />
+                    </IconButton>
+                    <Typography variant="h6" style={{ flexGrow: 1 }}>
+                        <h2>Slide title: {presentation?.name}</h2>
+                    </Typography>
+                    <Button color="inherit" onClick={() => localStorage.removeItem('token') && navigate('/login')}>
+                        Log out
                     </Button>
-                    <Button variant="contained" color="error" onClick={handleDelete} style={{ marginLeft: '10px' }}>
-                        Delete Presentation
-                    </Button>
-                </div>
-            </Header>
-            <p>{presentation?.description}</p>
+                </Toolbar>
+            </AppBar>
 
-            <input type="file" onChange={handleThumbnailUpdate} />
-            <br></br>
-            <Button variant="outlined" onClick={handleAddSlide}>Add Slide</Button>
+
+            <p>Slide description: {presentation?.description}</p>
+
+            <Button variant="outlined" onClick={() => setThumbnailModalOpen(true)} style={{ marginLeft: '10px' }}>
+                Update Thumbnail
+            </Button>
+            <Button variant="outlined" onClick={() => setEditTitleOpen(true)} style={{ marginLeft: '10px' }}>
+                Edit Title
+            </Button>
+            <Button variant="contained" color="error" onClick={handleDelete} style={{ marginLeft: '10px' }}>
+                Delete Presentation
+            </Button>
+            <Button variant="outlined" onClick={handleAddSlide} style={{ marginLeft: '10px' }}>Add Slide</Button>
             <Button variant="outlined" color="error" onClick={handleDeleteSlide} style={{ marginLeft: '10px' }}>Delete Slide</Button>
+            <br></br>
+            <br></br>
+            <br></br>
             <Button variant="outlined" onClick={handleAddTextElement} style={{ marginLeft: '10px' }}>Add Text Element</Button>
             <div>
                 {slides.length > 0 && (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', position: 'relative' }}>
-                        <div>
+                        <div style={{ textAlign: 'center', marginTop: '20px' }}>
                             <Button
                                 disabled={currentSlideIndex === 0}
                                 onClick={() => handleSlideNavigation('prev')}
@@ -327,9 +402,16 @@ function PresentationPage() {
                             >
                                 Next
                             </Button>
+                            <Typography variant="h4">{slides[currentSlideIndex]?.page}</Typography>
                         </div>
+
+                        <div style={{ textAlign: 'center', marginTop: '10px' }}>
+                            <SlideArea>
+                                <SlideNumber>{currentSlideIndex + 1}</SlideNumber>
+                            </SlideArea>
+                        </div>
+
                         <div>
-                            <p>{slides[currentSlideIndex]?.content}</p>
                             {elements.map((element, index) => (
                                 <div
                                     key={index}
@@ -357,13 +439,10 @@ function PresentationPage() {
                                 </div>
                             ))}
                         </div>
-                        <br></br>
-                        <SlideNumber>{currentSlideIndex + 1}</SlideNumber>
                     </div>
                 )}
             </div>
 
-            <Button variant="outlined" onClick={() => navigate('/dashboard')}>Back</Button>
             <Modal open={editTitleOpen} onClose={() => setEditTitleOpen(false)}>
                 <Box
                     sx={{
@@ -387,6 +466,79 @@ function PresentationPage() {
                     />
                     <Button variant="contained" onClick={handleTitleEdit}>
                         Save
+                    </Button>
+                </Box>
+            </Modal>
+
+            <Modal open={thumbnailModalOpen} onClose={() => setThumbnailModalOpen(false)}>
+                <Box
+                    sx={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        width: 400,
+                        bgcolor: 'background.paper',
+                        boxShadow: 24,
+                        p: 4,
+                    }}
+                >
+                    <Typography variant="h6" mb={2}>
+                        Upload New Thumbnail
+                    </Typography>
+                    <input type="file" onChange={handleThumbnailUpdate} />
+                </Box>
+            </Modal>
+
+            <Modal open={addTextModalOpen} onClose={() => setAddTextModalOpen(false)}>
+                <Box
+                    sx={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        width: 400,
+                        bgcolor: 'background.paper',
+                        boxShadow: 24,
+                        p: 4,
+                    }}
+                >
+                    <Typography variant="h6" gutterBottom>
+                        Add Text Element
+                    </Typography>
+                    <TextField
+                        fullWidth
+                        label="Text Content"
+                        value={textContent}
+                        onChange={(e) => setTextContent(e.target.value)}
+                        margin="normal"
+                    />
+                    <TextField
+                        fullWidth
+                        label="Size (%)"
+                        type="number"
+                        value={textSize}
+                        onChange={(e) => setTextSize(e.target.value)}
+                        margin="normal"
+                    />
+                    <TextField
+                        fullWidth
+                        label="Font Size (em)"
+                        type="number"
+                        value={fontSize}
+                        onChange={(e) => setFontSize(e.target.value)}
+                        margin="normal"
+                    />
+                    <TextField
+                        fullWidth
+                        label="Text Color"
+                        type="text"
+                        value={textColor}
+                        onChange={(e) => setTextColor(e.target.value)}
+                        margin="normal"
+                    />
+                    <Button variant="contained" onClick={handleAddText} style={{ marginTop: '20px' }}>
+                        Add Text
                     </Button>
                 </Box>
             </Modal>

@@ -665,77 +665,170 @@ function PresentationPage() {
             <Button variant="outlined" onClick={() => setAddVideoModalOpen(true)} style={{ marginLeft: '10px' }}>Add Video</Button>
             <Button variant="outlined" onClick={handleAddCodeElement} style={{ marginLeft: '10px' }}>Add Code Block</Button>
 
+            {slides.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', position: 'relative' }}>
+                    <div style={{ textAlign: 'center', marginTop: '20px' }}>
+                        <Button
+                            disabled={currentSlideIndex === 0}
+                            onClick={() => handleSlideNavigation('prev')}
+                        >
+                            Previous
+                        </Button>
+                        <span>Slide {currentSlideIndex + 1} of {slides.length}</span>
+                        <Button
+                            disabled={currentSlideIndex === slides.length - 1}
+                            onClick={() => handleSlideNavigation('next')}
+                        >
+                            Next
+                        </Button>
+                        <Typography variant="h4">{slides[currentSlideIndex]?.page}</Typography>
+                    </div>
 
-            <VideoWrapper
-                key={index}
-                size={element.size}
-                position={element.position}
-                onDoubleClick={() => {
-                    setVideoSource(element.source);
-                    setVideoSize(element.size);
-                    setVideoAutoPlay(element.autoPlay);
-                    setEditElementIndex(index);
-                    setEditVideoModalOpen(true);
-                }}
-                onContextMenu={(e) => {
-                    e.preventDefault();
-                    const updatedElements = slides[currentSlideIndex].elements.filter((_, i) => i !== index);
-                    const updatedSlides = slides.map((slide, slideIndex) =>
-                        slideIndex === currentSlideIndex ? { ...slide, elements: updatedElements } : slide
-                    );
-                    setSlides(updatedSlides);
-                }}
-            >
-                <iframe src={element.source} width="100%" height="auto" controls autoPlay={element.autoPlay} />
-            </VideoWrapper>
-            );
+                    <div style={{ textAlign: 'center', marginTop: '10px' }}>
+                        <SlideArea>
+                            <SlideNumber>{currentSlideIndex + 1}</SlideNumber>
+                            {slides[currentSlideIndex]?.elements?.map((element, index) => {
+                                if (element.type === 'text') {
+                                    return (
+                                        <div
+                                            key={index}
+                                            style={{
+                                                position: 'absolute',
+                                                top: `${element.position.y}%`,
+                                                left: `${element.position.x}%`,
+                                                width: `${element.size}%`,
+                                                border: '1px solid grey',
+                                                padding: '5px',
+                                                cursor: 'pointer',
+                                            }}
+                                            onDoubleClick={() => {
+                                                setTextContent(element.text);
+                                                setTextSize(element.size);
+                                                setFontSize(element.fontSize);
+                                                setTextColor(element.color);
+                                                setTextPosition(element.position);
+                                                setEditElementIndex(index);
+                                                setEditTextModalOpen(true);
+                                            }}
+                                            onContextMenu={(e) => {
+                                                e.preventDefault();
+                                                const updatedElements = slides[currentSlideIndex].elements.filter((_, i) => i !== index);
+                                                const updatedSlides = slides.map((slide, slideIndex) =>
+                                                    slideIndex === currentSlideIndex ? { ...slide, elements: updatedElements } : slide
+                                                );
+                                                setSlides(updatedSlides);
+                                                updateStoreWithSlides(updatedSlides);
+                                            }}
+                                        >
+                                            <span style={{ fontSize: `${element.fontSize}em`, color: element.color }}>
+                                                {element.text}
+                                            </span>
+                                        </div>
+                                    );
+                                } else if (element.type === 'image') {
+                                    return (
+                                        <img
+                                            key={index}
+                                            src={element.source}
+                                            alt={element.alt}
+                                            style={{
+                                                position: 'absolute',
+                                                top: `${element.position.y}%`,
+                                                left: `${element.position.x}%`,
+                                                width: `${element.size}%`,
+                                                cursor: 'pointer',
+                                                border: '1px solid grey',
+                                            }}
+                                            onDoubleClick={() => {
+                                                setImageSource(element.source);
+                                                setImageSize(element.size);
+                                                setAltText(element.alt);
+                                                setImagePosition(element.position);
+                                                setEditElementIndex(index);
+                                                setEditImageModalOpen(true);
+                                            }}
+                                            onContextMenu={(e) => {
+                                                e.preventDefault();
+                                                const updatedElements = slides[currentSlideIndex].elements.filter((_, i) => i !== index);
+                                                const updatedSlides = slides.map((slide, slideIndex) =>
+                                                    slideIndex === currentSlideIndex ? { ...slide, elements: updatedElements } : slide
+                                                );
+                                                setSlides(updatedSlides);
+                                                updateStoreWithSlides(updatedSlides);
+                                            }}
+                                        />
+                                    );
+                                } else if (element.type === 'video') {
+                                    return (
+                                        <VideoWrapper
+                                            key={index}
+                                            size={element.size}
+                                            position={element.position}
+                                            onDoubleClick={() => {
+                                                setVideoSource(element.source);
+                                                setVideoSize(element.size);
+                                                setVideoAutoPlay(element.autoPlay);
+                                                setEditElementIndex(index);
+                                                setEditVideoModalOpen(true);
+                                            }}
+                                            onContextMenu={(e) => {
+                                                e.preventDefault();
+                                                const updatedElements = slides[currentSlideIndex].elements.filter((_, i) => i !== index);
+                                                const updatedSlides = slides.map((slide, slideIndex) =>
+                                                    slideIndex === currentSlideIndex ? { ...slide, elements: updatedElements } : slide
+                                                );
+                                                setSlides(updatedSlides);
+                                            }}
+                                        >
+                                            <iframe src={element.source} width="100%" height="auto" controls autoPlay={element.autoPlay} />
+                                        </VideoWrapper>
+                                    );
                                 } else if (element.type === 'code') {
                                     return (
-            <div
-                key={index}
-                style={{
-                    position: 'absolute',
-                    top: `${element.position.y}%`,
-                    left: `${element.position.x}%`,
-                    width: '80%',
-                    border: '1px solid grey',
-                    padding: '10px',
-                    cursor: 'pointer',
-                    backgroundColor: '#f5f5f5',
-                    overflow: 'auto'
-                }}
-                onDoubleClick={() => {
-                    setCodeContent(element.code);
-                    setCodeLanguage(element.language);
-                    setCodeFontSize(element.fontSize);
-                    setAddCodeModalOpen(true);
-                }}
-                onContextMenu={(e) => {
-                    e.preventDefault();
-                    const updatedElements = slides[currentSlideIndex].elements.filter((_, i) => i !== index);
-                    const updatedSlides = slides.map((slide, slideIndex) =>
-                        slideIndex === currentSlideIndex ? { ...slide, elements: updatedElements } : slide
-                    );
-                    setSlides(updatedSlides);
-                }}
-            >
-                <SyntaxHighlighter
-                    language={element.language}
-                    style={docco}
-                    customStyle={{ fontSize: `${element.fontSize}em`, whiteSpace: 'pre-wrap' }}
-                >
-                    {element.code}
-                </SyntaxHighlighter>
-            </div>
-            );
+                                        <div
+                                            key={index}
+                                            style={{
+                                                position: 'absolute',
+                                                top: `${element.position.y}%`,
+                                                left: `${element.position.x}%`,
+                                                width: '80%',
+                                                border: '1px solid grey',
+                                                padding: '10px',
+                                                cursor: 'pointer',
+                                                backgroundColor: '#f5f5f5',
+                                                overflow: 'auto'
+                                            }}
+                                            onDoubleClick={() => {
+                                                setCodeContent(element.code);
+                                                setCodeLanguage(element.language);
+                                                setCodeFontSize(element.fontSize);
+                                                setAddCodeModalOpen(true);
+                                            }}
+                                            onContextMenu={(e) => {
+                                                e.preventDefault();
+                                                const updatedElements = slides[currentSlideIndex].elements.filter((_, i) => i !== index);
+                                                const updatedSlides = slides.map((slide, slideIndex) =>
+                                                    slideIndex === currentSlideIndex ? { ...slide, elements: updatedElements } : slide
+                                                );
+                                                setSlides(updatedSlides);
+                                            }}
+                                        >
+                                            <SyntaxHighlighter
+                                                language={element.language}
+                                                style={docco}
+                                                customStyle={{ fontSize: `${element.fontSize}em`, whiteSpace: 'pre-wrap' }}
+                                            >
+                                                {element.code}
+                                            </SyntaxHighlighter>
+                                        </div>
+                                    );
                                 }
-            return null;
+                                return null;
                             })}
-        </SlideArea>
-                    </div >
-                </div >
-            )
-}
+                        </SlideArea>
+                    </div>
+                </div>
+            )}
 
             <Modal open={editTitleOpen} onClose={() => setEditTitleOpen(false)}>
                 <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', boxShadow: 24, p: 4, }}>
@@ -866,7 +959,7 @@ function PresentationPage() {
                     <Button variant="contained" onClick={handleAddCode} style={{ marginTop: '20px' }}> Add Code</Button>
                 </Box>
             </Modal>
-        </div >
+        </div>
     );
 }
 

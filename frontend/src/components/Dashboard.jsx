@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import 'w3-css/w3.css';
-import { Card, CardContent, CardMedia, Typography, Button } from '@mui/material';
+import { Card, CardContent, Typography } from '@mui/material';
 
 const DashboardWrapper = styled.div`
     padding: 20px;
@@ -73,150 +73,150 @@ const LogoutButton = styled.button`
 `;
 
 function Dashboard() {
-    const [presentations, setPresentations] = useState([]);
-    const [newPresentation, setNewPresentation] = useState({ name: '', description: '', thumbnail: '' });
-    const navigate = useNavigate();
+  const [presentations, setPresentations] = useState([]);
+  const [newPresentation, setNewPresentation] = useState({ name: '', description: '', thumbnail: '' });
+  const navigate = useNavigate();
 
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            navigate('/login');
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login');
+    }
+  }, [navigate]);
+
+  useEffect(() => {
+    const fetchPresentations = async () => {
+      try {
+        const response = await fetch('http://localhost:5005/store', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setPresentations(data.store || []);
         }
-    }, [navigate]);
-
-    useEffect(() => {
-        const fetchPresentations = async () => {
-            try {
-                const response = await fetch('http://localhost:5005/store', {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${localStorage.getItem('token')}`,
-                    },
-                });
-                if (response.ok) {
-                    const data = await response.json();
-                    setPresentations(data.store || []);
-                }
-            } catch (error) {
-                console.error('Error fetching presentations:', error);
-            }
-        };
-        fetchPresentations();
-    }, []);
-
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        navigate('/login');
+      } catch (error) {
+        console.error('Error fetching presentations:', error);
+      }
     };
+    fetchPresentations();
+  }, []);
 
-    const handleCreatePresentation = async () => {
-        try {
-            const updatedPresentations = [...presentations, {
-                ...newPresentation, id: presentations.length + 1, slides: [{ page: "Default Slide 1" }],
-                slidesCount: 1,
-            }];
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/login');
+  };
 
-            const response = await fetch('http://localhost:5005/store', {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${localStorage.getItem('token')}`,
-                },
-                body: JSON.stringify({ store: updatedPresentations }),
-            });
+  const handleCreatePresentation = async () => {
+    try {
+      const updatedPresentations = [...presentations, {
+        ...newPresentation, id: presentations.length + 1, slides: [{ page: "Default Slide 1" }],
+        slidesCount: 1,
+      }];
 
-            if (response.ok) {
-                setPresentations(updatedPresentations);
-                document.getElementById('newPresentationModal').style.display = 'none';
-            } else {
-                console.error('Error creating presentation');
-            }
-        } catch (error) {
-            console.error('Error creating presentation:', error);
-        }
-    };
+      const response = await fetch('http://localhost:5005/store', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({ store: updatedPresentations }),
+      });
 
-    return (
-        <DashboardWrapper>
-            <Header>
-                <Greeting>Hello!</Greeting>
-                <LogoutButton onClick={handleLogout}>Logout</LogoutButton>
-            </Header>
+      if (response.ok) {
+        setPresentations(updatedPresentations);
+        document.getElementById('newPresentationModal').style.display = 'none';
+      } else {
+        console.error('Error creating presentation');
+      }
+    } catch (error) {
+      console.error('Error creating presentation:', error);
+    }
+  };
 
-            <NewPresentationButton onClick={() => (document.getElementById('newPresentationModal').style.display = 'block')}>New Presentation</NewPresentationButton>
+  return (
+    <DashboardWrapper>
+      <Header>
+        <Greeting>Hello!</Greeting>
+        <LogoutButton onClick={handleLogout}>Logout</LogoutButton>
+      </Header>
 
-            <div id="newPresentationModal" className="w3-modal">
-                <div className="w3-modal-content w3-animate-top w3-card-4" style={{ padding: '20px', width: '400px' }}>
-                    <header className="w3-container w3-teal">
-                        <span
-                            onClick={() => (document.getElementById('newPresentationModal').style.display = 'none')}
-                            className="w3-button w3-display-topright"
-                        >&times;</span>
-                        <h2>Create New Presentation</h2>
-                    </header>
-                    <div className="w3-container">
-                        <input
-                            type="text"
-                            placeholder="Name"
-                            className="w3-input w3-border"
-                            value={newPresentation.name}
-                            onChange={(e) => setNewPresentation({ ...newPresentation, name: e.target.value })}
-                            required
-                        />
-                        <br />
-                        <input
-                            type="text"
-                            placeholder="Description"
-                            className="w3-input w3-border"
-                            value={newPresentation.description}
-                            onChange={(e) => setNewPresentation({ ...newPresentation, description: e.target.value })}
-                        />
-                        <br />
-                        <input
-                            type="file"
-                            className="w3-input w3-border"
-                            onChange={(e) => setNewPresentation({ ...newPresentation, thumbnail: e.target.files[0] })}
-                        />
-                        <br />
-                        <button className="w3-button w3-green" onClick={handleCreatePresentation}>Create</button>
-                        <button className="w3-button w3-red" onClick={() => (document.getElementById('newPresentationModal').style.display = 'none')}>Cancel</button>
-                    </div>
-                </div>
-            </div>
+      <NewPresentationButton onClick={() => (document.getElementById('newPresentationModal').style.display = 'block')}>New Presentation</NewPresentationButton>
 
-            {presentations.length === 0 ? (
-                <p>There is no project, let's begin your first project!</p>
-            ) : (
-                <PresentationGrid>
-                    {presentations.map((presentation) => (
-                        <CardStyle key={presentation.id} onClick={() => navigate(`/presentation/${presentation.id}`)} style={{ cursor: 'pointer' }}>
-                            <div
-                                style={{
-                                    backgroundImage: `url(${typeof presentation.thumbnail === 'object' ? URL.createObjectURL(presentation.thumbnail) : presentation.thumbnail || 'https://via.placeholder.com/300'})`,
-                                    backgroundSize: 'cover',
-                                    backgroundPosition: 'center',
-                                    height: '50%',
-                                    width: '100%',
-                                }}
-                            />
-                            <CustomCardContent>
-                                <TightTypography gutterBottom variant="h7" component="div">
-                                    {presentation.name}
-                                </TightTypography>
-                                <TightTypography variant="body2" color="text.secondary">
-                                    {presentation.description || 'No description provided'}
-                                </TightTypography>
-                                <TightTypography variant="body2" color="text.secondary">
+      <div id="newPresentationModal" className="w3-modal">
+        <div className="w3-modal-content w3-animate-top w3-card-4" style={{ padding: '20px', width: '400px' }}>
+          <header className="w3-container w3-teal">
+            <span
+              onClick={() => (document.getElementById('newPresentationModal').style.display = 'none')}
+              className="w3-button w3-display-topright"
+            >&times;</span>
+            <h2>Create New Presentation</h2>
+          </header>
+          <div className="w3-container">
+            <input
+              type="text"
+              placeholder="Name"
+              className="w3-input w3-border"
+              value={newPresentation.name}
+              onChange={(e) => setNewPresentation({ ...newPresentation, name: e.target.value })}
+              required
+            />
+            <br />
+            <input
+              type="text"
+              placeholder="Description"
+              className="w3-input w3-border"
+              value={newPresentation.description}
+              onChange={(e) => setNewPresentation({ ...newPresentation, description: e.target.value })}
+            />
+            <br />
+            <input
+              type="file"
+              className="w3-input w3-border"
+              onChange={(e) => setNewPresentation({ ...newPresentation, thumbnail: e.target.files[0] })}
+            />
+            <br />
+            <button className="w3-button w3-green" onClick={handleCreatePresentation}>Create</button>
+            <button className="w3-button w3-red" onClick={() => (document.getElementById('newPresentationModal').style.display = 'none')}>Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      {presentations.length === 0 ? (
+        <p>There is no project, please create a new project!</p>
+      ) : (
+        <PresentationGrid>
+          {presentations.map((presentation) => (
+            <CardStyle key={presentation.id} onClick={() => navigate(`/presentation/${presentation.id}`)} style={{ cursor: 'pointer' }}>
+              <div
+                style={{
+                  backgroundImage: `url(${typeof presentation.thumbnail === 'object' ? URL.createObjectURL(presentation.thumbnail) : presentation.thumbnail || 'https://via.placeholder.com/300'})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  height: '50%',
+                  width: '100%',
+                }}
+              />
+              <CustomCardContent>
+                <TightTypography gutterBottom variant="h7" component="div">
+                  {presentation.name}
+                </TightTypography>
+                <TightTypography variant="body2" color="text.secondary">
+                  {presentation.description || 'No description provided'}
+                </TightTypography>
+                <TightTypography variant="body2" color="text.secondary">
                                     Slides: {presentation.slidesCount || 0}
-                                </TightTypography>
-                            </CustomCardContent>
-                        </CardStyle>
-                    ))}
-                </PresentationGrid>
-            )}
-        </DashboardWrapper>
-    );
+                </TightTypography>
+              </CustomCardContent>
+            </CardStyle>
+          ))}
+        </PresentationGrid>
+      )}
+    </DashboardWrapper>
+  );
 }
 
 export default Dashboard;

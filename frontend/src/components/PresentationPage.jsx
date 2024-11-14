@@ -8,6 +8,7 @@ import { docco } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import javascript from 'react-syntax-highlighter/dist/esm/languages/hljs/javascript';
 import python from 'react-syntax-highlighter/dist/esm/languages/hljs/python';
 import c from 'react-syntax-highlighter/dist/esm/languages/hljs/c';
+import { SiJavascript, SiPython, SiC } from 'react-icons/si';
 
 SyntaxHighlighter.registerLanguage('javascript', javascript);
 SyntaxHighlighter.registerLanguage('python', python);
@@ -784,6 +785,27 @@ function PresentationPage() {
                                         </VideoWrapper>
                                     );
                                 } else if (element.type === 'code') {
+                                    let languageIcon;
+                                    let languageName;
+
+                                    switch (element.language) {
+                                        case 'javascript':
+                                            languageIcon = <SiJavascript color="#F0DB4F" size={24} />;
+                                            languageName = "JavaScript";
+                                            break;
+                                        case 'python':
+                                            languageIcon = <SiPython color="#306998" size={24} />;
+                                            languageName = "Python";
+                                            break;
+                                        case 'c':
+                                            languageIcon = <SiC color="#00599C" size={24} />;
+                                            languageName = "C";
+                                            break;
+                                        default:
+                                            languageName = element.language;
+                                            break;
+                                    }
+
                                     return (
                                         <div
                                             key={index}
@@ -811,8 +833,21 @@ function PresentationPage() {
                                                     slideIndex === currentSlideIndex ? { ...slide, elements: updatedElements } : slide
                                                 );
                                                 setSlides(updatedSlides);
+                                                updateStoreWithSlides(updatedSlides);
                                             }}
                                         >
+                                            <div style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                marginBottom: '8px',
+                                                backgroundColor: '#e0e0e0',
+                                                padding: '5px',
+                                                borderRadius: '6px 6px 0 0',
+                                            }}>
+                                                {languageIcon}
+                                                <span style={{ marginLeft: '8px', fontWeight: 'bold' }}>{languageName}</span>
+                                            </div>
+
                                             <SyntaxHighlighter
                                                 language={element.language}
                                                 style={docco}

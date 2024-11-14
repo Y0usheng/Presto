@@ -1098,7 +1098,56 @@ function PresentationPage() {
                         />
                     )}
 
+                    {backgroundType === 'gradient' && (
+                        <>
+                            <InputLabel id="gradient-direction-label">Gradient Direction</InputLabel>
+                            <Select
+                                labelId="gradient-direction-label"
+                                value={gradientDirection}
+                                onChange={(e) => setGradientDirection(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                            >
+                                <MenuItem value="to right">Left to Right</MenuItem>
+                                <MenuItem value="to bottom">Top to Bottom</MenuItem>
+                            </Select>
+                            <TextField
+                                fullWidth
+                                label="Start Color"
+                                type="color"
+                                value={gradientColors.start}
+                                onChange={(e) => setGradientColors({ ...gradientColors, start: e.target.value })}
+                                margin="normal"
+                            />
+                            <TextField
+                                fullWidth
+                                label="End Color"
+                                type="color"
+                                value={gradientColors.end}
+                                onChange={(e) => setGradientColors({ ...gradientColors, end: e.target.value })}
+                                margin="normal"
+                            />
+                        </>
+                    )}
 
+                    {backgroundType === 'image' && (
+                        <input
+                            type="file"
+                            onChange={(e) => {
+                                const file = e.target.files[0];
+                                if (file) {
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => {
+                                        setBackgroundImage(reader.result);
+                                    };
+                                    reader.readAsDataURL(file);
+                                }
+                            }}
+                        />
+                    )}
+
+                    <Button variant="contained" onClick={handleBackgroundChange} style={{ marginTop: '20px' }}>Apply Background</Button>
+                </Box>
             </Modal>
         </div>
     );

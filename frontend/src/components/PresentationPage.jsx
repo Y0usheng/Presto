@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { AppBar, Toolbar, Typography, IconButton, Button, TextField, Modal, Box } from '@mui/material';
+import { AppBar, Toolbar, Typography, IconButton, Button, TextField, Modal, Box, Checkbox, FormControlLabel } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 const SlideArea = styled.div`
@@ -23,6 +23,19 @@ const SlideNumber = styled.div`
     height: 50px;
     font-size: 1em;
     color: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+`;
+
+const VideoWrapper = styled.div`
+    position: absolute;
+    top: ${(props) => props.position.y}%;
+    left: ${(props) => props.position.x}%;
+    width: ${(props) => props.size}%;
+    border: 2px dashed #ccc;
+    padding: 5px;
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -56,6 +69,12 @@ function PresentationPage() {
     const [imageSize, setImageSize] = useState(50);
     const [altText, setAltText] = useState('');
     const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
+
+    const [addVideoModalOpen, setAddVideoModalOpen] = useState(false);
+    const [editVideoModalOpen, setEditVideoModalOpen] = useState(false);
+    const [videoSource, setVideoSource] = useState('');
+    const [videoSize, setVideoSize] = useState(50);
+    const [videoAutoPlay, setVideoAutoPlay] = useState(false);
 
 
     const handleDelete = async () => {
@@ -371,11 +390,7 @@ function PresentationPage() {
             });
             if (response.ok) {
                 const data = await response.json();
-                const updatedStore = data.store.map((p) =>
-                    p.id === parseInt(id)
-                        ? { ...p, slides: updatedSlides }
-                        : p
-                );
+                const updatedStore = data.store.map((p) => p.id === parseInt(id) ? { ...p, slides: updatedSlides } : p);
 
                 const updateResponse = await fetch(`http://localhost:5005/store`, {
                     method: 'PUT',
@@ -469,6 +484,69 @@ function PresentationPage() {
         setImagePosition({ x: 0, y: 0 });
     };
 
+    const handleAddVideo = async () => {
+        if (!videoSource.trim()) return;
+
+        const updatedSlides = slides.map((slide, index) =>
+            index === currentSlideIndex
+                ? {
+                    ...slide,
+                    elements: [
+                        ...(slide.elements || []),
+                        {
+                            type: 'video',
+                            size: videoSize,
+                            source: videoSource,
+                            autoPlay: videoAutoPlay,
+                            position: { x: 0, y: 0 },
+                            layer: (slide.elements || []).length,
+                        },
+                    ],
+                }
+                : slide
+        );
+
+        setSlides(updatedSlides);
+        setAddVideoModalOpen(false);
+        resetVideoFormFields();
+
+        await updateStoreWithSlides(updatedSlides);
+    };
+
+    const handleEditVideo = async () => {
+        if (!videoSource.trim() || editElementIndex === null) return;
+
+        const updatedSlides = slides.map((slide, index) =>
+            index === currentSlideIndex
+                ? {
+                    ...slide,
+                    elements: slide.elements.map((el, idx) =>
+                        idx === editElementIndex
+                            ? {
+                                ...el,
+                                source: videoSource,
+                                size: videoSize,
+                                autoPlay: videoAutoPlay,
+                            }
+                            : el
+                    ),
+                }
+                : slide
+        );
+
+        setSlides(updatedSlides);
+        setEditVideoModalOpen(false);
+        setEditElementIndex(null);
+        resetVideoFormFields();
+
+        await updateStoreWithSlides(updatedSlides);
+    };
+
+    const resetVideoFormFields = () => {
+        setVideoSource('');
+        setVideoSize(50);
+        setVideoAutoPlay(false);
+    };
 
     return (
         <div>
@@ -505,6 +583,7 @@ function PresentationPage() {
             <br></br>
             <Button variant="outlined" onClick={handleAddTextElement} style={{ marginLeft: '10px' }}>Add Text Element</Button>
             <Button variant="outlined" onClick={() => setAddImageModalOpen(true)} style={{ marginLeft: '10px' }}>Add Image</Button>
+            <Button variant="outlined" onClick={() => setAddVideoModalOpen(true)} style={{ marginLeft: '10px' }}>Add Video</Button>
             <div>
                 {slides.length > 0 && (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', position: 'relative' }}>
@@ -599,6 +678,31 @@ function PresentationPage() {
                                                 }}
                                             />
                                         );
+                                    } else if (element.type === 'video') {
+                                        return (
+                                            <VideoWrapper
+                                                key={index}
+                                                size={element.size}
+                                                position={element.position}
+                                                onDoubleClick={() => {
+                                                    setVideoSource(element.source);
+                                                    setVideoSize(element.size);
+                                                    setVideoAutoPlay(element.autoPlay);
+                                                    setEditElementIndex(index);
+                                                    setEditVideoModalOpen(true);
+                                                }}
+                                                onContextMenu={(e) => {
+                                                    e.preventDefault();
+                                                    const updatedElements = slides[currentSlideIndex].elements.filter((_, i) => i !== index);
+                                                    const updatedSlides = slides.map((slide, slideIndex) =>
+                                                        slideIndex === currentSlideIndex ? { ...slide, elements: updatedElements } : slide
+                                                    );
+                                                    setSlides(updatedSlides);
+                                                }}
+                                            >
+                                                <iframe src={element.source} width="100%" height="auto" controls autoPlay={element.autoPlay} />
+                                            </VideoWrapper>
+                                        );
                                     }
                                     return null;
                                 })}
@@ -609,45 +713,15 @@ function PresentationPage() {
             </div>
 
             <Modal open={editTitleOpen} onClose={() => setEditTitleOpen(false)}>
-                <Box
-                    sx={{
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        width: 400,
-                        bgcolor: 'background.paper',
-                        boxShadow: 24,
-                        p: 4,
-                    }}
-                >
+                <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', boxShadow: 24, p: 4, }}>
                     <h2>Edit Presentation Title</h2>
-                    <TextField
-                        fullWidth
-                        label="Title"
-                        value={newTitle}
-                        onChange={(e) => setNewTitle(e.target.value)}
-                        margin="normal"
-                    />
-                    <Button variant="contained" onClick={handleTitleEdit}>
-                        Save
-                    </Button>
+                    <TextField fullWidth label="Title" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} margin="normal" />
+                    <Button variant="contained" onClick={handleTitleEdit}>Save </Button>
                 </Box>
             </Modal>
 
             <Modal open={thumbnailModalOpen} onClose={() => setThumbnailModalOpen(false)}>
-                <Box
-                    sx={{
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        width: 400,
-                        bgcolor: 'background.paper',
-                        boxShadow: 24,
-                        p: 4,
-                    }}
-                >
+                <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', boxShadow: 24, p: 4, }}>
                     <Typography variant="h6" mb={2}>
                         Upload New Thumbnail
                     </Typography>
@@ -722,6 +796,32 @@ function PresentationPage() {
                     <TextField fullWidth label="Position X (%)" type="number" value={imagePosition.x} onChange={(e) => setImagePosition({ ...imagePosition, x: e.target.value })} margin="normal" />
                     <TextField fullWidth label="Position Y (%)" type="number" value={imagePosition.y} onChange={(e) => setImagePosition({ ...imagePosition, y: e.target.value })} margin="normal" />
                     <Button variant="contained" onClick={handleEditImage} style={{ marginTop: '20px' }}>Save Changes</Button>
+                </Box>
+            </Modal>
+
+            <Modal open={addVideoModalOpen} onClose={() => setAddVideoModalOpen(false)}>
+                <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', boxShadow: 24, p: 4 }}>
+                    <Typography variant="h6" gutterBottom>Add Video</Typography>
+                    <TextField fullWidth label="Video URL" value={videoSource} onChange={(e) => setVideoSource(e.target.value)} margin="normal" />
+                    <TextField fullWidth label="Size (%)" type="number" value={videoSize} onChange={(e) => setVideoSize(e.target.value)} margin="normal" />
+                    <FormControlLabel
+                        control={<Checkbox checked={videoAutoPlay} onChange={(e) => setVideoAutoPlay(e.target.checked)} />}
+                        label="Auto-Play"
+                    />
+                    <Button variant="contained" onClick={handleAddVideo} style={{ marginTop: '20px' }}>Add Video</Button>
+                </Box>
+            </Modal>
+
+            <Modal open={editVideoModalOpen} onClose={() => setEditVideoModalOpen(false)}>
+                <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', boxShadow: 24, p: 4 }}>
+                    <Typography variant="h6" gutterBottom>Edit Video</Typography>
+                    <TextField fullWidth label="Video URL" value={videoSource} onChange={(e) => setVideoSource(e.target.value)} margin="normal" />
+                    <TextField fullWidth label="Size (%)" type="number" value={videoSize} onChange={(e) => setVideoSize(e.target.value)} margin="normal" />
+                    <FormControlLabel
+                        control={<Checkbox checked={videoAutoPlay} onChange={(e) => setVideoAutoPlay(e.target.checked)} />}
+                        label="Auto-Play"
+                    />
+                    <Button variant="contained" onClick={handleEditVideo} style={{ marginTop: '20px' }}>Save Changes</Button>
                 </Box>
             </Modal>
         </div>

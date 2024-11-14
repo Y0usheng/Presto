@@ -8,6 +8,7 @@ import RegisterPage from './components/RegisterPage';
 import Dashboard from './components/Dashboard';
 import TokenCheckRouter from './components/CheckToken';
 import PresentationPage from './components/PresentationPage';
+import PreviewPage from './components/PreviewPage';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/dashboard" element={<TokenCheckRouter><Dashboard /></TokenCheckRouter>} />
         <Route path="/presentation/:id" element={<TokenCheckRouter><PresentationPage /></TokenCheckRouter>} />
+        <Route path="/preview/:id" element={<TokenCheckRouter><PreviewPage /></TokenCheckRouter>} />
       </Routes>
     </Router>
   )

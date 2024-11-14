@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 
-// Styled components (same as in LoginPage for consistency)
 const StyleDiv = styled.div`
   display: flex;
   height: 100vh;
@@ -110,28 +109,25 @@ function RegisterPage() {
       return;
     }
 
-    try {
-      const response = await fetch('http://localhost:5005/admin/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          email,
-          name,
-          password
-        })
-      });
-      const data = await response.json();
-      if (response.ok) {
-        localStorage.setItem('token', data.token);
-        navigate('/dashboard');
-      } else {
-        setError(data.error || 'Registration failed');
-      }
-    } catch (err) {
-      setError('An error occurred. Please try again.');
+    const response = await fetch('http://localhost:5005/admin/auth/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        email,
+        name,
+        password
+      })
+    });
+    const data = await response.json();
+    if (response.ok) {
+      localStorage.setItem('token', data.token);
+      navigate('/dashboard');
+    } else {
+      setError(data.error || 'Registration failed');
     }
+
   };
 
   const handleBack = () => {

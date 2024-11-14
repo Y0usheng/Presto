@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 
@@ -101,27 +101,24 @@ function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      const response = await fetch('http://localhost:5005/admin/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        })
-      });
-      const data = await response.json();
-      if (response.ok) {
-        localStorage.setItem('token', data.token)
-        console.log(data.token)
-        navigate('/dashboard');
-      } else {
-        setError(data.error || 'Invalid email or password');
-      }
-    } catch (err) {
-      setError('An error occurred. Please try again.');
+
+    const response = await fetch('http://localhost:5005/admin/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        email,
+        password,
+      })
+    });
+    const data = await response.json();
+    if (response.ok) {
+      localStorage.setItem('token', data.token)
+      console.log(data.token)
+      navigate('/dashboard');
+    } else {
+      setError(data.error || 'Invalid email or password');
     }
   };
 

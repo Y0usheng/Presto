@@ -5,14 +5,14 @@ import { AppBar, Toolbar, Typography, IconButton, Button, TextField, Modal, Box 
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 const SlideArea = styled.div`
-  width: 400px;
-  height: 400px;
-  border: 1px solid #ccc;
-  position: relative;
-  margin-top: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+    width: 600px;
+    height: 400px;
+    border: 1px solid #ccc;
+    position: relative;
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 `;
 
 const SlideNumber = styled.div`
@@ -40,10 +40,13 @@ function PresentationPage() {
     const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
     const [elements, setElements] = useState([]);
     const [addTextModalOpen, setAddTextModalOpen] = useState(false);
+    const [editTextModalOpen, setEditTextModalOpen] = useState(false);
     const [textContent, setTextContent] = useState('');
     const [textSize, setTextSize] = useState(50);
     const [fontSize, setFontSize] = useState(1);
     const [textColor, setTextColor] = useState('#000000');
+    const [textPosition, setTextPosition] = useState({ x: 0, y: 0 });
+    const [editElementIndex, setEditElementIndex] = useState(null);
 
     const handleDelete = async () => {
         if (window.confirm('Are you sure?')) {
@@ -302,7 +305,7 @@ function PresentationPage() {
                             text: textContent,
                             fontSize: fontSize,
                             color: textColor,
-                            position: { x: 0, y: 0 },
+                            position: textPosition,
                             layer: (slide.elements || []).length,
                         },
                     ],
@@ -312,11 +315,43 @@ function PresentationPage() {
 
         setSlides(updatedSlides);
         setAddTextModalOpen(false);
-        setTextContent('');
-        setTextSize(50);
-        setFontSize(1);
-        setTextColor('#000000');
+        resetTextFormFields();
 
+        await updateStoreWithSlides(updatedSlides);
+    };
+
+    const handleEditText = async () => {
+        if (textContent.trim() === '' || editElementIndex === null) return;
+
+        const updatedSlides = slides.map((slide, index) =>
+            index === currentSlideIndex
+                ? {
+                    ...slide,
+                    elements: slide.elements.map((el, idx) =>
+                        idx === editElementIndex
+                            ? {
+                                ...el,
+                                text: textContent,
+                                size: textSize,
+                                fontSize: fontSize,
+                                color: textColor,
+                                position: textPosition,
+                            }
+                            : el
+                    ),
+                }
+                : slide
+        );
+
+        setSlides(updatedSlides);
+        setEditTextModalOpen(false);
+        setEditElementIndex(null);
+        resetTextFormFields();
+
+        await updateStoreWithSlides(updatedSlides);
+    };
+
+    const updateStoreWithSlides = async (updatedSlides) => {
         try {
             const response = await fetch(`http://localhost:5005/store`, {
                 headers: {
@@ -346,8 +381,16 @@ function PresentationPage() {
                 }
             }
         } catch (error) {
-            console.error('Error adding text:', error);
+            console.error('Error updating presentation:', error);
         }
+    };
+
+    const resetTextFormFields = () => {
+        setTextContent('');
+        setTextSize(50);
+        setFontSize(1);
+        setTextColor('#000000');
+        setTextPosition({ x: 0, y: 0 });
     };
 
 
@@ -408,36 +451,43 @@ function PresentationPage() {
                         <div style={{ textAlign: 'center', marginTop: '10px' }}>
                             <SlideArea>
                                 <SlideNumber>{currentSlideIndex + 1}</SlideNumber>
+                                {slides[currentSlideIndex]?.elements?.map((element, index) => (
+                                    element.type === 'text' && (
+                                        <div
+                                            key={index}
+                                            style={{
+                                                position: 'absolute',
+                                                top: `${element.position.y}%`,
+                                                left: `${element.position.x}%`,
+                                                width: `${element.size}%`,
+                                                border: '1px solid grey',
+                                                padding: '5px',
+                                                cursor: 'pointer',
+                                            }}
+                                            onDoubleClick={() => {
+                                                setTextContent(element.text);
+                                                setTextSize(element.size);
+                                                setFontSize(element.fontSize);
+                                                setTextColor(element.color);
+                                                setTextPosition(element.position);
+                                                setEditElementIndex(index);
+                                                setEditTextModalOpen(true);
+                                            }}
+                                            onContextMenu={(e) => {
+                                                e.preventDefault();
+                                                const updatedElements = slides[currentSlideIndex].elements.filter((_, i) => i !== index);
+                                                const updatedSlides = slides.map((slide, slideIndex) =>
+                                                    slideIndex === currentSlideIndex ? { ...slide, elements: updatedElements } : slide
+                                                );
+                                                setSlides(updatedSlides);
+                                                updateStoreWithSlides(updatedSlides);
+                                            }}
+                                        >
+                                            <span style={{ fontSize: `${element.fontSize}em`, color: element.color }}>{element.text}</span>
+                                        </div>
+                                    )
+                                ))}
                             </SlideArea>
-                        </div>
-
-                        <div>
-                            {elements.map((element, index) => (
-                                <div
-                                    key={index}
-                                    style={{
-                                        position: 'absolute',
-                                        top: `${element.position.y}%`,
-                                        left: `${element.position.x}%`,
-                                        width: `${element.size}%`,
-                                        border: '1px solid grey',
-                                        padding: '5px',
-                                        cursor: 'pointer',
-                                    }}
-                                    onDoubleClick={() => {/* Implement edit functionality */ }}
-                                    onContextMenu={(e) => {
-                                        e.preventDefault();
-                                        const filteredElements = elements.filter((_, i) => i !== index);
-                                        setElements(filteredElements);
-                                        const updatedSlides = slides.map((slide, slideIndex) =>
-                                            slideIndex === currentSlideIndex ? { ...slide, elements: filteredElements } : slide
-                                        );
-                                        setSlides(updatedSlides);
-                                    }}
-                                >
-                                    <span style={{ fontSize: `${element.fontSize}em`, color: element.color }}>{element.text}</span>
-                                </div>
-                            ))}
                         </div>
                     </div>
                 )}
@@ -491,55 +541,28 @@ function PresentationPage() {
             </Modal>
 
             <Modal open={addTextModalOpen} onClose={() => setAddTextModalOpen(false)}>
-                <Box
-                    sx={{
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        width: 400,
-                        bgcolor: 'background.paper',
-                        boxShadow: 24,
-                        p: 4,
-                    }}
-                >
-                    <Typography variant="h6" gutterBottom>
-                        Add Text Element
-                    </Typography>
-                    <TextField
-                        fullWidth
-                        label="Text Content"
-                        value={textContent}
-                        onChange={(e) => setTextContent(e.target.value)}
-                        margin="normal"
-                    />
-                    <TextField
-                        fullWidth
-                        label="Size (%)"
-                        type="number"
-                        value={textSize}
-                        onChange={(e) => setTextSize(e.target.value)}
-                        margin="normal"
-                    />
-                    <TextField
-                        fullWidth
-                        label="Font Size (em)"
-                        type="number"
-                        value={fontSize}
-                        onChange={(e) => setFontSize(e.target.value)}
-                        margin="normal"
-                    />
-                    <TextField
-                        fullWidth
-                        label="Text Color"
-                        type="text"
-                        value={textColor}
-                        onChange={(e) => setTextColor(e.target.value)}
-                        margin="normal"
-                    />
-                    <Button variant="contained" onClick={handleAddText} style={{ marginTop: '20px' }}>
-                        Add Text
-                    </Button>
+                <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', boxShadow: 24, p: 4 }}>
+                    <Typography variant="h6" gutterBottom>Add Text Element</Typography>
+                    <TextField fullWidth label="Text Content" value={textContent} onChange={(e) => setTextContent(e.target.value)} margin="normal" />
+                    <TextField fullWidth label="Size (%)" type="number" value={textSize} onChange={(e) => setTextSize(e.target.value)} margin="normal" />
+                    <TextField fullWidth label="Font Size (em)" type="number" value={fontSize} onChange={(e) => setFontSize(e.target.value)} margin="normal" />
+                    <TextField fullWidth label="Text Color" type="text" value={textColor} onChange={(e) => setTextColor(e.target.value)} margin="normal" />
+                    <TextField fullWidth label="Position X (%)" type="number" value={textPosition.x} onChange={(e) => setTextPosition({ ...textPosition, x: e.target.value })} margin="normal" />
+                    <TextField fullWidth label="Position Y (%)" type="number" value={textPosition.y} onChange={(e) => setTextPosition({ ...textPosition, y: e.target.value })} margin="normal" />
+                    <Button variant="contained" onClick={handleAddText} style={{ marginTop: '20px' }}>Add Text</Button>
+                </Box>
+            </Modal>
+
+            <Modal open={editTextModalOpen} onClose={() => setEditTextModalOpen(false)}>
+                <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', boxShadow: 24, p: 4 }}>
+                    <Typography variant="h6" gutterBottom>Edit Text Element</Typography>
+                    <TextField fullWidth label="Text Content" value={textContent} onChange={(e) => setTextContent(e.target.value)} margin="normal" />
+                    <TextField fullWidth label="Size (%)" type="number" value={textSize} onChange={(e) => setTextSize(e.target.value)} margin="normal" />
+                    <TextField fullWidth label="Font Size (em)" type="number" value={fontSize} onChange={(e) => setFontSize(e.target.value)} margin="normal" />
+                    <TextField fullWidth label="Text Color" type="text" value={textColor} onChange={(e) => setTextColor(e.target.value)} margin="normal" />
+                    <TextField fullWidth label="Position X (%)" type="number" value={textPosition.x} onChange={(e) => setTextPosition({ ...textPosition, x: e.target.value })} margin="normal" />
+                    <TextField fullWidth label="Position Y (%)" type="number" value={textPosition.y} onChange={(e) => setTextPosition({ ...textPosition, y: e.target.value })} margin="normal" />
+                    <Button variant="contained" onClick={handleEditText} style={{ marginTop: '20px' }}>Save Changes</Button>
                 </Box>
             </Modal>
         </div>

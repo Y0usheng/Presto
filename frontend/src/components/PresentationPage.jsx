@@ -32,6 +32,7 @@ function PresentationPage() {
     const [newThumbnail, setNewThumbnail] = useState(null);
     const [slides, setSlides] = useState([]);
     const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+    const [elements, setElements] = useState([]);
 
     const handleDelete = async () => {
         if (window.confirm('Are you sure?')) {
@@ -270,6 +271,25 @@ function PresentationPage() {
         }
     };
 
+    const handleAddTextElement = () => {
+        const newElement = {
+            type: 'text',
+            size: 50,
+            text: 'New Text',
+            fontSize: 1,
+            color: '#000000',
+            position: { x: 0, y: 0 },
+            layer: elements.length,
+        };
+        const newElements = [...elements, newElement];
+        setElements(newElements);
+
+        const updatedSlides = slides.map((slide, index) =>
+            index === currentSlideIndex ? { ...slide, elements: newElements } : slide
+        );
+        setSlides(updatedSlides);
+    };
+
     return (
         <div>
             <Header>
@@ -289,6 +309,7 @@ function PresentationPage() {
             <br></br>
             <Button variant="outlined" onClick={handleAddSlide}>Add Slide</Button>
             <Button variant="outlined" color="error" onClick={handleDeleteSlide} style={{ marginLeft: '10px' }}>Delete Slide</Button>
+            <Button variant="outlined" onClick={handleAddTextElement} style={{ marginLeft: '10px' }}>Add Text Element</Button>
             <div>
                 {slides.length > 0 && (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', position: 'relative' }}>
@@ -309,9 +330,32 @@ function PresentationPage() {
                         </div>
                         <div>
                             <p>{slides[currentSlideIndex]?.content}</p>
-                            <p>{slides[currentSlideIndex]?.content}</p>
-                            <p>{slides[currentSlideIndex]?.content}</p>
-                            <p>{slides[currentSlideIndex]?.content}</p>
+                            {elements.map((element, index) => (
+                                <div
+                                    key={index}
+                                    style={{
+                                        position: 'absolute',
+                                        top: `${element.position.y}%`,
+                                        left: `${element.position.x}%`,
+                                        width: `${element.size}%`,
+                                        border: '1px solid grey',
+                                        padding: '5px',
+                                        cursor: 'pointer',
+                                    }}
+                                    onDoubleClick={() => {/* Implement edit functionality */ }}
+                                    onContextMenu={(e) => {
+                                        e.preventDefault();
+                                        const filteredElements = elements.filter((_, i) => i !== index);
+                                        setElements(filteredElements);
+                                        const updatedSlides = slides.map((slide, slideIndex) =>
+                                            slideIndex === currentSlideIndex ? { ...slide, elements: filteredElements } : slide
+                                        );
+                                        setSlides(updatedSlides);
+                                    }}
+                                >
+                                    <span style={{ fontSize: `${element.fontSize}em`, color: element.color }}>{element.text}</span>
+                                </div>
+                            ))}
                         </div>
                         <br></br>
                         <SlideNumber>{currentSlideIndex + 1}</SlideNumber>

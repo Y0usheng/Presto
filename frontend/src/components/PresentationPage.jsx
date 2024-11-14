@@ -39,14 +39,24 @@ function PresentationPage() {
     const [slides, setSlides] = useState([]);
     const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
     const [elements, setElements] = useState([]);
+
     const [addTextModalOpen, setAddTextModalOpen] = useState(false);
     const [editTextModalOpen, setEditTextModalOpen] = useState(false);
+
     const [textContent, setTextContent] = useState('');
     const [textSize, setTextSize] = useState(50);
     const [fontSize, setFontSize] = useState(1);
     const [textColor, setTextColor] = useState('#000000');
     const [textPosition, setTextPosition] = useState({ x: 0, y: 0 });
     const [editElementIndex, setEditElementIndex] = useState(null);
+
+    const [addImageModalOpen, setAddImageModalOpen] = useState(false);
+    const [editImageModalOpen, setEditImageModalOpen] = useState(false);
+    const [imageSource, setImageSource] = useState('');
+    const [imageSize, setImageSize] = useState(50);
+    const [altText, setAltText] = useState('');
+    const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
+
 
     const handleDelete = async () => {
         if (window.confirm('Are you sure?')) {
@@ -393,6 +403,72 @@ function PresentationPage() {
         setTextPosition({ x: 0, y: 0 });
     };
 
+    const handleAddImage = async () => {
+        if (!imageSource.trim()) return;
+
+        const updatedSlides = slides.map((slide, index) =>
+            index === currentSlideIndex
+                ? {
+                    ...slide,
+                    elements: [
+                        ...(slide.elements || []),
+                        {
+                            type: 'image',
+                            size: imageSize,
+                            source: imageSource,
+                            alt: altText,
+                            position: imagePosition,
+                            layer: (slide.elements || []).length,
+                        },
+                    ],
+                }
+                : slide
+        );
+
+        setSlides(updatedSlides);
+        setAddImageModalOpen(false);
+        resetImageFormFields();
+
+        await updateStoreWithSlides(updatedSlides);
+    };
+
+    const handleEditImage = async () => {
+        if (!imageSource.trim() || editElementIndex === null) return;
+
+        const updatedSlides = slides.map((slide, index) =>
+            index === currentSlideIndex
+                ? {
+                    ...slide,
+                    elements: slide.elements.map((el, idx) =>
+                        idx === editElementIndex
+                            ? {
+                                ...el,
+                                source: imageSource,
+                                size: imageSize,
+                                alt: altText,
+                                position: imagePosition,
+                            }
+                            : el
+                    ),
+                }
+                : slide
+        );
+
+        setSlides(updatedSlides);
+        setEditImageModalOpen(false);
+        setEditElementIndex(null);
+        resetImageFormFields();
+
+        await updateStoreWithSlides(updatedSlides);
+    };
+
+    const resetImageFormFields = () => {
+        setImageSource('');
+        setImageSize(50);
+        setAltText('');
+        setImagePosition({ x: 0, y: 0 });
+    };
+
 
     return (
         <div>
@@ -428,6 +504,7 @@ function PresentationPage() {
             <br></br>
             <br></br>
             <Button variant="outlined" onClick={handleAddTextElement} style={{ marginLeft: '10px' }}>Add Text Element</Button>
+            <Button variant="outlined" onClick={() => setAddImageModalOpen(true)} style={{ marginLeft: '10px' }}>Add Image</Button>
             <div>
                 {slides.length > 0 && (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', position: 'relative' }}>
@@ -451,42 +528,80 @@ function PresentationPage() {
                         <div style={{ textAlign: 'center', marginTop: '10px' }}>
                             <SlideArea>
                                 <SlideNumber>{currentSlideIndex + 1}</SlideNumber>
-                                {slides[currentSlideIndex]?.elements?.map((element, index) => (
-                                    element.type === 'text' && (
-                                        <div
-                                            key={index}
-                                            style={{
-                                                position: 'absolute',
-                                                top: `${element.position.y}%`,
-                                                left: `${element.position.x}%`,
-                                                width: `${element.size}%`,
-                                                border: '1px solid grey',
-                                                padding: '5px',
-                                                cursor: 'pointer',
-                                            }}
-                                            onDoubleClick={() => {
-                                                setTextContent(element.text);
-                                                setTextSize(element.size);
-                                                setFontSize(element.fontSize);
-                                                setTextColor(element.color);
-                                                setTextPosition(element.position);
-                                                setEditElementIndex(index);
-                                                setEditTextModalOpen(true);
-                                            }}
-                                            onContextMenu={(e) => {
-                                                e.preventDefault();
-                                                const updatedElements = slides[currentSlideIndex].elements.filter((_, i) => i !== index);
-                                                const updatedSlides = slides.map((slide, slideIndex) =>
-                                                    slideIndex === currentSlideIndex ? { ...slide, elements: updatedElements } : slide
-                                                );
-                                                setSlides(updatedSlides);
-                                                updateStoreWithSlides(updatedSlides);
-                                            }}
-                                        >
-                                            <span style={{ fontSize: `${element.fontSize}em`, color: element.color }}>{element.text}</span>
-                                        </div>
-                                    )
-                                ))}
+                                {slides[currentSlideIndex]?.elements?.map((element, index) => {
+                                    if (element.type === 'text') {
+                                        return (
+                                            <div
+                                                key={index}
+                                                style={{
+                                                    position: 'absolute',
+                                                    top: `${element.position.y}%`,
+                                                    left: `${element.position.x}%`,
+                                                    width: `${element.size}%`,
+                                                    border: '1px solid grey',
+                                                    padding: '5px',
+                                                    cursor: 'pointer',
+                                                }}
+                                                onDoubleClick={() => {
+                                                    setTextContent(element.text);
+                                                    setTextSize(element.size);
+                                                    setFontSize(element.fontSize);
+                                                    setTextColor(element.color);
+                                                    setTextPosition(element.position);
+                                                    setEditElementIndex(index);
+                                                    setEditTextModalOpen(true);
+                                                }}
+                                                onContextMenu={(e) => {
+                                                    e.preventDefault();
+                                                    const updatedElements = slides[currentSlideIndex].elements.filter((_, i) => i !== index);
+                                                    const updatedSlides = slides.map((slide, slideIndex) =>
+                                                        slideIndex === currentSlideIndex ? { ...slide, elements: updatedElements } : slide
+                                                    );
+                                                    setSlides(updatedSlides);
+                                                    updateStoreWithSlides(updatedSlides);
+                                                }}
+                                            >
+                                                <span style={{ fontSize: `${element.fontSize}em`, color: element.color }}>
+                                                    {element.text}
+                                                </span>
+                                            </div>
+                                        );
+                                    } else if (element.type === 'image') {
+                                        return (
+                                            <img
+                                                key={index}
+                                                src={element.source}
+                                                alt={element.alt}
+                                                style={{
+                                                    position: 'absolute',
+                                                    top: `${element.position.y}%`,
+                                                    left: `${element.position.x}%`,
+                                                    width: `${element.size}%`,
+                                                    cursor: 'pointer',
+                                                    border: '1px solid grey',
+                                                }}
+                                                onDoubleClick={() => {
+                                                    setImageSource(element.source);
+                                                    setImageSize(element.size);
+                                                    setAltText(element.alt);
+                                                    setImagePosition(element.position);
+                                                    setEditElementIndex(index);
+                                                    setEditImageModalOpen(true);
+                                                }}
+                                                onContextMenu={(e) => {
+                                                    e.preventDefault();
+                                                    const updatedElements = slides[currentSlideIndex].elements.filter((_, i) => i !== index);
+                                                    const updatedSlides = slides.map((slide, slideIndex) =>
+                                                        slideIndex === currentSlideIndex ? { ...slide, elements: updatedElements } : slide
+                                                    );
+                                                    setSlides(updatedSlides);
+                                                    updateStoreWithSlides(updatedSlides);
+                                                }}
+                                            />
+                                        );
+                                    }
+                                    return null;
+                                })}
                             </SlideArea>
                         </div>
                     </div>
@@ -563,6 +678,50 @@ function PresentationPage() {
                     <TextField fullWidth label="Position X (%)" type="number" value={textPosition.x} onChange={(e) => setTextPosition({ ...textPosition, x: e.target.value })} margin="normal" />
                     <TextField fullWidth label="Position Y (%)" type="number" value={textPosition.y} onChange={(e) => setTextPosition({ ...textPosition, y: e.target.value })} margin="normal" />
                     <Button variant="contained" onClick={handleEditText} style={{ marginTop: '20px' }}>Save Changes</Button>
+                </Box>
+            </Modal>
+
+            <Modal open={addImageModalOpen} onClose={() => setAddImageModalOpen(false)}>
+                <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', boxShadow: 24, p: 4 }}>
+                    <Typography variant="h6" gutterBottom>Add Image</Typography>
+                    <TextField fullWidth label="Image URL" value={imageSource} onChange={(e) => setImageSource(e.target.value)} margin="normal" />
+                    <input type="file" onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                                setImageSource(reader.result);
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    }} />
+                    <TextField fullWidth label="Size (%)" type="number" value={imageSize} onChange={(e) => setImageSize(e.target.value)} margin="normal" />
+                    <TextField fullWidth label="Alt Text" value={altText} onChange={(e) => setAltText(e.target.value)} margin="normal" />
+                    <TextField fullWidth label="Position X (%)" type="number" value={imagePosition.x} onChange={(e) => setImagePosition({ ...imagePosition, x: e.target.value })} margin="normal" />
+                    <TextField fullWidth label="Position Y (%)" type="number" value={imagePosition.y} onChange={(e) => setImagePosition({ ...imagePosition, y: e.target.value })} margin="normal" />
+                    <Button variant="contained" onClick={handleAddImage} style={{ marginTop: '20px' }}>Add Image</Button>
+                </Box>
+            </Modal>
+
+            <Modal open={editImageModalOpen} onClose={() => setEditImageModalOpen(false)}>
+                <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', boxShadow: 24, p: 4 }}>
+                    <Typography variant="h6" gutterBottom>Edit Image</Typography>
+                    <TextField fullWidth label="Image URL" value={imageSource} onChange={(e) => setImageSource(e.target.value)} margin="normal" />
+                    <input type="file" onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                                setImageSource(reader.result);
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    }} />
+                    <TextField fullWidth label="Size (%)" type="number" value={imageSize} onChange={(e) => setImageSize(e.target.value)} margin="normal" />
+                    <TextField fullWidth label="Alt Text" value={altText} onChange={(e) => setAltText(e.target.value)} margin="normal" />
+                    <TextField fullWidth label="Position X (%)" type="number" value={imagePosition.x} onChange={(e) => setImagePosition({ ...imagePosition, x: e.target.value })} margin="normal" />
+                    <TextField fullWidth label="Position Y (%)" type="number" value={imagePosition.y} onChange={(e) => setImagePosition({ ...imagePosition, y: e.target.value })} margin="normal" />
+                    <Button variant="contained" onClick={handleEditImage} style={{ marginTop: '20px' }}>Save Changes</Button>
                 </Box>
             </Modal>
         </div>

@@ -70,6 +70,7 @@ function PresentationPage() {
     const [textSize, setTextSize] = useState(50);
     const [fontSize, setFontSize] = useState(1);
     const [textColor, setTextColor] = useState('#000000');
+    const [fontFamily, setFontFamily] = useState('Arial');
     const [textPosition, setTextPosition] = useState({ x: 0, y: 0 });
     const [editElementIndex, setEditElementIndex] = useState(null);
 
@@ -350,6 +351,7 @@ function PresentationPage() {
                             fontSize: fontSize,
                             color: textColor,
                             position: textPosition,
+                            fontFamily: fontFamily,
                             layer: (slide.elements || []).length,
                         },
                     ],
@@ -379,6 +381,7 @@ function PresentationPage() {
                                 size: textSize,
                                 fontSize: fontSize,
                                 color: textColor,
+                                fontFamily: fontFamily,
                                 position: textPosition,
                             }
                             : el
@@ -430,6 +433,7 @@ function PresentationPage() {
         setTextSize(50);
         setFontSize(1);
         setTextColor('#000000');
+        setFontFamily('Arial');
         setTextPosition({ x: 0, y: 0 });
     };
 
@@ -701,12 +705,14 @@ function PresentationPage() {
                                                 border: '1px solid grey',
                                                 padding: '5px',
                                                 cursor: 'pointer',
+                                                fontFamily: element.fontFamily,
                                             }}
                                             onDoubleClick={() => {
                                                 setTextContent(element.text);
                                                 setTextSize(element.size);
                                                 setFontSize(element.fontSize);
                                                 setTextColor(element.color);
+                                                setFontFamily(element.fontFamily);
                                                 setTextPosition(element.position);
                                                 setEditElementIndex(index);
                                                 setEditTextModalOpen(true);
@@ -889,6 +895,18 @@ function PresentationPage() {
                     <TextField fullWidth label="Size (%)" type="number" value={textSize} onChange={(e) => setTextSize(e.target.value)} margin="normal" />
                     <TextField fullWidth label="Font Size (em)" type="number" value={fontSize} onChange={(e) => setFontSize(e.target.value)} margin="normal" />
                     <TextField fullWidth label="Text Color" type="text" value={textColor} onChange={(e) => setTextColor(e.target.value)} margin="normal" />
+                    <InputLabel id="font-family-label">Font Family</InputLabel>
+                    <Select
+                        labelId="font-family-label"
+                        value={fontFamily}
+                        onChange={(e) => setFontFamily(e.target.value)}
+                        fullWidth
+                        margin="normal"
+                    >
+                        <MenuItem value="Arial">Arial</MenuItem>
+                        <MenuItem value="Times New Roman">Times New Roman</MenuItem>
+                        <MenuItem value="Courier New">Courier New</MenuItem>
+                    </Select>
                     <TextField fullWidth label="Position X (%)" type="number" value={textPosition.x} onChange={(e) => setTextPosition({ ...textPosition, x: e.target.value })} margin="normal" />
                     <TextField fullWidth label="Position Y (%)" type="number" value={textPosition.y} onChange={(e) => setTextPosition({ ...textPosition, y: e.target.value })} margin="normal" />
                     <Button variant="contained" onClick={handleAddText} style={{ marginTop: '20px' }}>Add Text</Button>
@@ -902,6 +920,18 @@ function PresentationPage() {
                     <TextField fullWidth label="Size (%)" type="number" value={textSize} onChange={(e) => setTextSize(e.target.value)} margin="normal" />
                     <TextField fullWidth label="Font Size (em)" type="number" value={fontSize} onChange={(e) => setFontSize(e.target.value)} margin="normal" />
                     <TextField fullWidth label="Text Color" type="text" value={textColor} onChange={(e) => setTextColor(e.target.value)} margin="normal" />
+                    <InputLabel id="font-family-label">Font Family</InputLabel>
+                    <Select
+                        labelId="font-family-label"
+                        value={fontFamily}
+                        onChange={(e) => setFontFamily(e.target.value)}
+                        fullWidth
+                        margin="normal"
+                    >
+                        <MenuItem value="Arial">Arial</MenuItem>
+                        <MenuItem value="Times New Roman">Times New Roman</MenuItem>
+                        <MenuItem value="Courier New">Courier New</MenuItem>
+                    </Select>
                     <TextField fullWidth label="Position X (%)" type="number" value={textPosition.x} onChange={(e) => setTextPosition({ ...textPosition, x: e.target.value })} margin="normal" />
                     <TextField fullWidth label="Position Y (%)" type="number" value={textPosition.y} onChange={(e) => setTextPosition({ ...textPosition, y: e.target.value })} margin="normal" />
                     <Button variant="contained" onClick={handleEditText} style={{ marginTop: '20px' }}>Save Changes</Button>

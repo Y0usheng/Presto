@@ -23,6 +23,7 @@ const SlideArea = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
+    background: ${(props) => props.background};
 `;
 
 const SlideNumber = styled.div`
@@ -92,6 +93,12 @@ function PresentationPage() {
     const [codeLanguage, setCodeLanguage] = useState('javascript');
     const [codeFontSize, setCodeFontSize] = useState(1);
 
+    const [backgroundModalOpen, setBackgroundModalOpen] = useState(false);
+    const [backgroundType, setBackgroundType] = useState('solid');
+    const [backgroundColor, setBackgroundColor] = useState('#ffffff');
+    const [gradientColors, setGradientColors] = useState({ start: '#ffffff', end: '#000000' });
+    const [gradientDirection, setGradientDirection] = useState('to right');
+    const [backgroundImage, setBackgroundImage] = useState('');
 
     const handleDelete = async () => {
         if (window.confirm('Are you sure?')) {
@@ -632,6 +639,43 @@ function PresentationPage() {
         }
     };
 
+    const handleBackgroundChange = async () => {
+        const updatedSlides = slides.map((slide, index) =>
+            index === currentSlideIndex
+                ? {
+                    ...slide,
+                    background: {
+                        type: backgroundType,
+                        color: backgroundColor,
+                        gradient: {
+                            direction: gradientDirection,
+                            start: gradientColors.start,
+                            end: gradientColors.end,
+                        },
+                        image: backgroundImage,
+                    },
+                }
+                : slide
+        );
+
+        setSlides(updatedSlides);
+        setBackgroundModalOpen(false);
+    };
+
+    const getSlideBackgroundStyle = (slide) => {
+        if (!slide?.background) {
+            return '#ffffff';
+        }
+        if (slide.background.type === 'solid') {
+            return slide.background.color;
+        } else if (slide.background.type === 'gradient') {
+            return `linear-gradient(${slide.background.gradient.direction}, ${slide.background.gradient.start}, ${slide.background.gradient.end})`;
+        } else if (slide.background.type === 'image') {
+            return `url(${slide.background.image})`;
+        }
+        return '#ffffff';
+    };
+
     return (
         <div>
             <AppBar position="static" color="default">
@@ -669,6 +713,7 @@ function PresentationPage() {
             <Button variant="outlined" onClick={() => setAddImageModalOpen(true)} style={{ marginLeft: '10px' }}>Add Image</Button>
             <Button variant="outlined" onClick={() => setAddVideoModalOpen(true)} style={{ marginLeft: '10px' }}>Add Video</Button>
             <Button variant="outlined" onClick={handleAddCodeElement} style={{ marginLeft: '10px' }}>Add Code Block</Button>
+            <Button variant="outlined" onClick={() => setBackgroundModalOpen(true)} style={{ marginLeft: '10px' }}>Change Background</Button>
 
             {slides.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', position: 'relative' }}>
@@ -690,7 +735,7 @@ function PresentationPage() {
                     </div>
 
                     <div style={{ textAlign: 'center', marginTop: '10px' }}>
-                        <SlideArea>
+                        <SlideArea background={getSlideBackgroundStyle(slides[currentSlideIndex])}>
                             <SlideNumber>{currentSlideIndex + 1}</SlideNumber>
                             {slides[currentSlideIndex]?.elements?.map((element, index) => {
                                 if (element.type === 'text') {
@@ -1023,6 +1068,37 @@ function PresentationPage() {
                     <TextField fullWidth label="Font Size (em)" type="number" value={codeFontSize} onChange={(e) => setCodeFontSize(e.target.value)} margin="dense" />
                     <Button variant="contained" onClick={handleAddCode} style={{ marginTop: '20px' }}> Add Code</Button>
                 </Box>
+            </Modal>
+
+            <Modal open={backgroundModalOpen} onClose={() => setBackgroundModalOpen(false)}>
+                <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 500, bgcolor: 'background.paper', boxShadow: 24, p: 4 }}>
+                    <Typography variant="h6" gutterBottom>Change Background</Typography>
+
+                    <InputLabel id="background-type-label">Background Type</InputLabel>
+                    <Select
+                        labelId="background-type-label"
+                        value={backgroundType}
+                        onChange={(e) => setBackgroundType(e.target.value)}
+                        fullWidth
+                        margin="normal"
+                    >
+                        <MenuItem value="solid">Solid Color</MenuItem>
+                        <MenuItem value="gradient">Gradient</MenuItem>
+                        <MenuItem value="image">Image</MenuItem>
+                    </Select>
+
+                    {backgroundType === 'solid' && (
+                        <TextField
+                            fullWidth
+                            label="Background Color"
+                            type="color"
+                            value={backgroundColor}
+                            onChange={(e) => setBackgroundColor(e.target.value)}
+                            margin="normal"
+                        />
+                    )}
+
+
             </Modal>
         </div>
     );

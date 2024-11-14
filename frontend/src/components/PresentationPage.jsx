@@ -53,7 +53,7 @@ const VideoWrapper = styled.div`
 `;
 
 function PresentationPage() {
-    const { id } = useParams();
+    const { id, slideNumber } = useParams();
     const navigate = useNavigate();
     const [presentation, setPresentation] = useState(null);
     const [editTitleOpen, setEditTitleOpen] = useState(false);
@@ -61,7 +61,7 @@ function PresentationPage() {
     const [thumbnailModalOpen, setThumbnailModalOpen] = useState(false);
     const [newThumbnail, setNewThumbnail] = useState(null);
     const [slides, setSlides] = useState([]);
-    const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+    const [currentSlideIndex, setCurrentSlideIndex] = useState(parseInt(slideNumber) - 1 || 0);
     const [elements, setElements] = useState([]);
 
     const [addTextModalOpen, setAddTextModalOpen] = useState(false);
@@ -173,6 +173,16 @@ function PresentationPage() {
 
         fetchPresentation();
     }, [id]);
+
+    useEffect(() => {
+        navigate(`/presentation/${id}/slide/${currentSlideIndex + 1}`, { replace: true });
+    }, [currentSlideIndex, id, navigate]);
+
+    useEffect(() => {
+        if (slideNumber) {
+            setCurrentSlideIndex(parseInt(slideNumber) - 1);
+        }
+    }, [slideNumber]);
 
     const handleTitleEdit = async () => {
         try {
@@ -683,7 +693,7 @@ function PresentationPage() {
                     <IconButton edge="start" color="inherit" onClick={() => navigate('/dashboard')} aria-label="back">
                         <ArrowBackIcon />
                     </IconButton>
-                    <Typography variant="h2" style={{ flexGrow: 1 }}>
+                    <Typography variant="h4" style={{ flexGrow: 1 }}>
                         Slide title: {presentation?.name}
                     </Typography>
                     <Button color="inherit" onClick={() => localStorage.removeItem('token') && navigate('/login')}>
@@ -691,7 +701,6 @@ function PresentationPage() {
                     </Button>
                 </Toolbar>
             </AppBar>
-
 
             <p>Slide description: {presentation?.description}</p>
 

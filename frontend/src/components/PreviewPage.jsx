@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { Button, Typography } from '@mui/material';
 
@@ -21,7 +21,8 @@ const SlideContent = styled.div`
 `;
 
 function PreviewPage() {
-    const { id } = useParams();
+    const { id, slideNumber } = useParams();
+    const navigate = useNavigate();
     const [slides, setSlides] = useState([]);
     const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
 
@@ -54,6 +55,16 @@ function PreviewPage() {
 
         fetchPresentation();
     }, [id]);
+
+    useEffect(() => {
+        navigate(`/preview/${id}/slide/${currentSlideIndex + 1}`, { replace: true });
+    }, [currentSlideIndex, id, navigate]);
+
+    useEffect(() => {
+        if (slideNumber) {
+            setCurrentSlideIndex(parseInt(slideNumber) - 1);
+        }
+    }, [slideNumber]);
 
     const getSlideBackgroundStyle = (slide) => {
         if (!slide?.background) {

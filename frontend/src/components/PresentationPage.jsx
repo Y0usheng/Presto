@@ -102,7 +102,7 @@ function PresentationPage() {
   const [gradientDirection, setGradientDirection] = useState('to right');
   const [backgroundImage, setBackgroundImage] = useState('');
 
-  // 2.2.6. Deleting slides
+  // 2.2.3. Basics of a presentation controls, Delete Presentation
   const handleDelete = async () => {
     if (window.confirm('Are you sure?')) {
       try {
@@ -264,6 +264,7 @@ function PresentationPage() {
     }
   };
 
+  // 2.2.5. Creating slides
   const handleAddSlide = async () => {
     try {
       const newSlides = [...slides, { page: `Slide ${slides.length + 1}` }];
@@ -302,6 +303,7 @@ function PresentationPage() {
     }
   };
 
+  // 2.2.6.Deleting slides
   const handleDeleteSlide = async () => {
     if (slides.length === 1) {
       alert('Cannot delete the only slide. Please delete the presentation instead.');
@@ -347,6 +349,7 @@ function PresentationPage() {
     }
   };
 
+  // 2.2.5. Moving between
   const handleSlideNavigation = (direction) => {
     if (direction === 'next' && currentSlideIndex < slides.length - 1) {
       setCurrentSlideIndex(currentSlideIndex + 1);
@@ -355,6 +358,7 @@ function PresentationPage() {
     }
   };
 
+  // 2.3.1. Putting TEXT on the slide
   const handleAddTextElement = () => {
     setAddTextModalOpen(true);
   };
@@ -461,6 +465,7 @@ function PresentationPage() {
     setTextPosition({ x: 0, y: 0 });
   };
 
+  // 2.3.2. Putting an IMAGE on the slide
   const handleAddImage = async () => {
     if (!imageSource.trim()) return;
 
@@ -527,6 +532,7 @@ function PresentationPage() {
     setImagePosition({ x: 0, y: 0 });
   };
 
+  // 2.3.3. Putting a VIDEO on the slide
   const handleAddVideo = async () => {
     if (!videoSource.trim()) return;
 
@@ -591,6 +597,7 @@ function PresentationPage() {
     setVideoAutoPlay(false);
   };
 
+  // 2.3.4. Putting CODE on the slide
   const handleAddCodeElement = () => {
     setAddCodeModalOpen(true);
   };
@@ -656,6 +663,7 @@ function PresentationPage() {
     }
   };
 
+  // 2.4.2. Theme and background picker
   const handleBackgroundChange = async () => {
     const updatedSlides = slides.map((slide, index) =>
       index === currentSlideIndex
@@ -711,6 +719,7 @@ function PresentationPage() {
 
       <p>Slide description: {presentation?.description}</p>
 
+      {/* All button implemented */}
       <Button variant="outlined" onClick={() => setThumbnailModalOpen(true)} style={{ marginLeft: '10px' }}>
         Update Thumbnail
       </Button>
@@ -732,6 +741,7 @@ function PresentationPage() {
       <Button variant="outlined" onClick={() => setBackgroundModalOpen(true)} style={{ marginLeft: '10px' }}>Change Background</Button>
       <Button variant="outlined" onClick={() => window.open(`/preview/${id}`, '_blank')} style={{ marginLeft: '10px' }}> Preview</Button>
 
+      {/* 2.2.5. Moving between */}
       {slides.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', position: 'relative' }}>
           <div style={{ textAlign: 'center', marginTop: '20px' }}>
@@ -755,6 +765,9 @@ function PresentationPage() {
             <SlideArea background={getSlideBackgroundStyle(slides[currentSlideIndex])}>
               <SlideNumber>{currentSlideIndex + 1}</SlideNumber>
               {slides[currentSlideIndex]?.elements?.map((element, index) => {
+                //////////////////////////////////////
+                // 2.3.1. Putting TEXT on the slide //
+                //////////////////////////////////////
                 if (element.type === 'text') {
                   return (
                     <div
@@ -794,6 +807,9 @@ function PresentationPage() {
                       </span>
                     </div>
                   );
+                  //////////////////////////////////////////
+                  // 2.3.2. Putting an IMAGE on the slide //
+                  //////////////////////////////////////////
                 } else if (element.type === 'image') {
                   return (
                     <img
@@ -827,6 +843,10 @@ function PresentationPage() {
                       }}
                     />
                   );
+
+                  /////////////////////////////////////////
+                  // 2.3.3. Putting a VIDEO on the slide //
+                  /////////////////////////////////////////
                 } else if (element.type === 'video') {
                   return (
                     <VideoWrapper
@@ -852,6 +872,10 @@ function PresentationPage() {
                       <iframe src={element.source} width="100%" height="auto" autoPlay={element.autoPlay} />
                     </VideoWrapper>
                   );
+
+                  /////////////////////////////////////////
+                  // 2.3.4. Putting CODE on the slide //
+                  /////////////////////////////////////////
                 } else if (element.type === 'code') {
                   let languageIcon;
                   let languageName;
@@ -933,6 +957,7 @@ function PresentationPage() {
         </div>
       )}
 
+      {/* Model for 2.2.4. Title editing */}
       <Modal open={editTitleOpen} onClose={() => setEditTitleOpen(false)}>
         <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', boxShadow: 24, p: 4, }}>
           <h2>Edit Presentation Title</h2>
@@ -941,6 +966,7 @@ function PresentationPage() {
         </Box>
       </Modal>
 
+      {/* Model for 2.2.4. Thumbnail editing */}
       <Modal open={thumbnailModalOpen} onClose={() => setThumbnailModalOpen(false)}>
         <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', boxShadow: 24, p: 4, }}>
           <Typography variant="h6" mb={2}>
@@ -950,6 +976,7 @@ function PresentationPage() {
         </Box>
       </Modal>
 
+      {/* Model for 2.3.1. Putting TEXT on the slide */}
       <Modal open={addTextModalOpen} onClose={() => setAddTextModalOpen(false)}>
         <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', boxShadow: 24, p: 4 }}>
           <Typography variant="h6" gutterBottom>Add Text Element</Typography>
@@ -1000,6 +1027,7 @@ function PresentationPage() {
         </Box>
       </Modal>
 
+      {/* Model for 2.3.2. Putting an IMAGE on the slide */}
       <Modal open={addImageModalOpen} onClose={() => setAddImageModalOpen(false)}>
         <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', boxShadow: 24, p: 4 }}>
           <Typography variant="h6" gutterBottom>Add Image</Typography>
@@ -1044,6 +1072,7 @@ function PresentationPage() {
         </Box>
       </Modal>
 
+      {/* Model for 2.3.3. Putting a VIDEO on the slide */}
       <Modal open={addVideoModalOpen} onClose={() => setAddVideoModalOpen(false)}>
         <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', boxShadow: 24, p: 4 }}>
           <Typography variant="h6" gutterBottom>Add Video</Typography>
@@ -1070,6 +1099,7 @@ function PresentationPage() {
         </Box>
       </Modal>
 
+      {/* Model for 2.3.4. Putting CODE on the slide */}
       <Modal open={addCodeModalOpen} onClose={() => setAddCodeModalOpen(false)}>
         <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 500, bgcolor: 'background.paper', boxShadow: 24, p: 4, }}>
           <Typography variant="h6" gutterBottom>
@@ -1087,6 +1117,7 @@ function PresentationPage() {
         </Box>
       </Modal>
 
+      {/* Model for 2.4.2. Theme and background picker */}
       <Modal open={backgroundModalOpen} onClose={() => setBackgroundModalOpen(false)}>
         <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 500, bgcolor: 'background.paper', boxShadow: 24, p: 4 }}>
           <Typography variant="h6" gutterBottom>Change Background</Typography>

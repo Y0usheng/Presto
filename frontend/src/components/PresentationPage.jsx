@@ -55,13 +55,16 @@ const VideoWrapper = styled.div`
 function PresentationPage() {
   const { id, slideNumber } = useParams();
   const navigate = useNavigate();
-  const [presentation, setPresentation] = useState(null);
+
   const [editTitleOpen, setEditTitleOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [thumbnailModalOpen, setThumbnailModalOpen] = useState(false);
   const [setNewThumbnail] = useState(null);
+
   const [slides, setSlides] = useState([]);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(parseInt(slideNumber) - 1 || 0);
+  const [presentation, setPresentation] = useState(null);
+
 
   const [addTextModalOpen, setAddTextModalOpen] = useState(false);
   const [editTextModalOpen, setEditTextModalOpen] = useState(false);
@@ -99,6 +102,7 @@ function PresentationPage() {
   const [gradientDirection, setGradientDirection] = useState('to right');
   const [backgroundImage, setBackgroundImage] = useState('');
 
+  // 2.2.6. Deleting slides
   const handleDelete = async () => {
     if (window.confirm('Are you sure?')) {
       try {
@@ -141,6 +145,7 @@ function PresentationPage() {
     }
   };
 
+  // 
   useEffect(() => {
     const fetchPresentation = async () => {
       try {
@@ -173,6 +178,7 @@ function PresentationPage() {
     fetchPresentation();
   }, [id]);
 
+  // 2.4.4. URL Updating
   useEffect(() => {
     navigate(`/presentation/${id}/slide/${currentSlideIndex + 1}`, { replace: true });
   }, [currentSlideIndex, id, navigate]);
@@ -183,6 +189,7 @@ function PresentationPage() {
     }
   }, [slideNumber]);
 
+  // 2.2.4. Title editing
   const handleTitleEdit = async () => {
     try {
       const response = await fetch(`http://localhost:5005/store`, {
@@ -214,6 +221,7 @@ function PresentationPage() {
     }
   };
 
+  // 2.2.4. Thumbnail editing
   const handleThumbnailUpdate = async (e) => {
     const file = e.target.files[0];
     if (file) {

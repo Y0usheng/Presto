@@ -189,4 +189,61 @@ describe('PresentationPage Component - Adding Text to Slide', () => {
             color: '#0000FF',
         });
     });
+
+    it('should allow deleting a text box by right-clicking', async () => {
+        fetch
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({
+                    store: [
+                        {
+                            id: 1,
+                            name: 'Presentation 1',
+                            description: 'Description 1',
+                            slides: [
+                                {
+                                    page: 'Slide 1',
+                                    elements: [
+                                        {
+                                            type: 'text',
+                                            text: 'Hello World',
+                                            size: 50,
+                                            fontSize: 1.5,
+                                            color: '#FF0000',
+                                            position: { x: 0, y: 0 },
+                                            fontFamily: 'Arial',
+                                        },
+                                    ],
+                                },
+                            ],
+                        },
+                    ],
+                }),
+            })
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({}),
+            });
+
+        render(
+            <BrowserRouter>
+                <PresentationPage />
+            </BrowserRouter>
+        );
+
+        await waitFor(() => {
+            expect(fetch).toHaveBeenCalledTimes(1);
+        });
+
+        const textElement = screen.getByText('Hello World');
+        expect(textElement).toBeInTheDocument();
+
+        fireEvent.contextMenu(textElement.parentElement);
+
+        await waitFor(() => {
+            expect(fetch).toHaveBeenCalledTimes(2);
+        });
+
+        expect(screen.queryByText('Hello World')).not.toBeInTheDocument();
+    });
 });

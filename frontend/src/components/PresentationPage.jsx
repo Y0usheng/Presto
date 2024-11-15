@@ -452,3 +452,198 @@ function PresentationPage() {
     setFontFamily('Arial');
     setTextPosition({ x: 0, y: 0 });
   };
+
+  const handleAddImage = async () => {
+    if (!imageSource.trim()) return;
+
+    const updatedSlides = slides.map((slide, index) =>
+      index === currentSlideIndex
+        ? {
+          ...slide,
+          elements: [
+            ...(slide.elements || []),
+            {
+              type: 'image',
+              size: imageSize,
+              source: imageSource,
+              alt: altText,
+              position: imagePosition,
+              layer: (slide.elements || []).length,
+            },
+          ],
+        }
+        : slide
+    );
+
+    setSlides(updatedSlides);
+    setAddImageModalOpen(false);
+    resetImageFormFields();
+
+    await updateStoreWithSlides(updatedSlides);
+  };
+
+  const handleEditImage = async () => {
+    if (!imageSource.trim() || editElementIndex === null) return;
+
+    const updatedSlides = slides.map((slide, index) =>
+      index === currentSlideIndex
+        ? {
+          ...slide,
+          elements: slide.elements.map((el, idx) =>
+            idx === editElementIndex
+              ? {
+                ...el,
+                source: imageSource,
+                size: imageSize,
+                alt: altText,
+                position: imagePosition,
+              }
+              : el
+          ),
+        }
+        : slide
+    );
+
+    setSlides(updatedSlides);
+    setEditImageModalOpen(false);
+    setEditElementIndex(null);
+    resetImageFormFields();
+
+    await updateStoreWithSlides(updatedSlides);
+  };
+
+  const resetImageFormFields = () => {
+    setImageSource('');
+    setImageSize(50);
+    setAltText('');
+    setImagePosition({ x: 0, y: 0 });
+  };
+
+  const handleAddVideo = async () => {
+    if (!videoSource.trim()) return;
+
+    const updatedSlides = slides.map((slide, index) =>
+      index === currentSlideIndex
+        ? {
+          ...slide,
+          elements: [
+            ...(slide.elements || []),
+            {
+              type: 'video',
+              size: videoSize,
+              source: videoSource,
+              autoPlay: videoAutoPlay,
+              position: { x: 0, y: 0 },
+              layer: (slide.elements || []).length,
+            },
+          ],
+        }
+        : slide
+    );
+
+    setSlides(updatedSlides);
+    setAddVideoModalOpen(false);
+    resetVideoFormFields();
+
+    await updateStoreWithSlides(updatedSlides);
+  };
+
+  const handleEditVideo = async () => {
+    if (!videoSource.trim() || editElementIndex === null) return;
+
+    const updatedSlides = slides.map((slide, index) =>
+      index === currentSlideIndex
+        ? {
+          ...slide,
+          elements: slide.elements.map((el, idx) =>
+            idx === editElementIndex
+              ? {
+                ...el,
+                source: videoSource,
+                size: videoSize,
+                autoPlay: videoAutoPlay,
+              }
+              : el
+          ),
+        }
+        : slide
+    );
+
+    setSlides(updatedSlides);
+    setEditVideoModalOpen(false);
+    setEditElementIndex(null);
+    resetVideoFormFields();
+
+    await updateStoreWithSlides(updatedSlides);
+  };
+
+  const resetVideoFormFields = () => {
+    setVideoSource('');
+    setVideoSize(50);
+    setVideoAutoPlay(false);
+  };
+
+  const handleAddCodeElement = () => {
+    setAddCodeModalOpen(true);
+  };
+
+  const handleAddCode = async () => {
+    if (codeContent.trim() === '') return;
+
+    const updatedSlides = slides.map((slide, index) =>
+      index === currentSlideIndex
+        ? {
+          ...slide,
+          elements: [
+            ...(slide.elements || []),
+            {
+              type: 'code',
+              language: codeLanguage,
+              code: codeContent,
+              fontSize: codeFontSize,
+              position: { x: 0, y: 0 },
+              layer: (slide.elements || []).length,
+            },
+          ],
+        }
+        : slide
+    );
+
+    setSlides(updatedSlides);
+    setAddCodeModalOpen(false);
+    setCodeContent('');
+    setCodeLanguage('javascript');
+    setCodeFontSize(1);
+
+    try {
+      const response = await fetch(`http://localhost:5005/store`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const updatedStore = data.store.map((p) =>
+          p.id === parseInt(id)
+            ? { ...p, slides: updatedSlides }
+            : p
+        );
+
+        const updateResponse = await fetch(`http://localhost:5005/store`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+          body: JSON.stringify({ ...data, store: updatedStore }),
+        });
+
+        if (!updateResponse.ok) {
+          console.error('Failed to update presentation');
+        }
+      }
+    } catch (error) {
+      console.error('Error adding code:', error);
+    }
+  };

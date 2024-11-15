@@ -849,21 +849,21 @@ function PresentationPage() {
                   let languageName;
 
                   switch (element.language) {
-                    case 'javascript':
-                      languageIcon = <SiJavascript color="#F0DB4F" size={24} />;
-                      languageName = "JavaScript";
-                      break;
-                    case 'python':
-                      languageIcon = <SiPython color="#306998" size={24} />;
-                      languageName = "Python";
-                      break;
-                    case 'c':
-                      languageIcon = <SiC color="#00599C" size={24} />;
-                      languageName = "C";
-                      break;
-                    default:
-                      languageName = element.language;
-                      break;
+                  case 'javascript':
+                    languageIcon = <SiJavascript color="#F0DB4F" size={24} />;
+                    languageName = "JavaScript";
+                    break;
+                  case 'python':
+                    languageIcon = <SiPython color="#306998" size={24} />;
+                    languageName = "Python";
+                    break;
+                  case 'c':
+                    languageIcon = <SiC color="#00599C" size={24} />;
+                    languageName = "C";
+                    break;
+                  default:
+                    languageName = element.language;
+                    break;
                   }
 
                   return (

@@ -179,4 +179,59 @@ describe('PresentationPage Component - Adding Image to Slide', () => {
             width: '60%',
         });
     });
+
+    it('should allow deleting an image from the slide by right-clicking', async () => {
+        fetch
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({
+                    store: [
+                        {
+                            id: 1,
+                            name: 'Presentation 1',
+                            description: 'Description 1',
+                            slides: [
+                                {
+                                    page: 'Slide 1',
+                                    elements: [
+                                        {
+                                            type: 'image',
+                                            source: 'https://example.com/image.png',
+                                            size: 50,
+                                            alt: 'Example Image',
+                                            position: { x: 0, y: 0 },
+                                        },
+                                    ],
+                                },
+                            ],
+                        },
+                    ],
+                }),
+            })
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({}),
+            });
+
+        render(
+            <BrowserRouter>
+                <PresentationPage />
+            </BrowserRouter>
+        );
+
+        await waitFor(() => {
+            expect(fetch).toHaveBeenCalledTimes(1);
+        });
+
+        const imageElement = screen.getByAltText('Example Image');
+        expect(imageElement).toBeInTheDocument();
+
+        fireEvent.contextMenu(imageElement);
+
+        await waitFor(() => {
+            expect(fetch).toHaveBeenCalledTimes(2);
+        });
+
+        expect(screen.queryByAltText('Example Image')).not.toBeInTheDocument();
+    });
 });

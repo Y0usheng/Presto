@@ -6,7 +6,11 @@ import { Card, CardContent, Typography } from '@mui/material';
 
 const DashboardWrapper = styled.div`
   padding: 20px;
-  
+  background-image: url('https://images.unsplash.com/photo-1493723843671-1d655e66ac1c?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NTB8fGJhY2tncm91bmR8ZW58MHx8MHx8fDA%3D');
+  background-size: cover;
+  background-position: center;
+  min-height: 100vh;
+
   @media (max-width: 768px) {
     padding: 10px;
   }
@@ -26,8 +30,9 @@ const Header = styled.div`
 `;
 
 const Greeting = styled.h2`
-  margin: 0;
+  margin-left: 5px;
   font-size: 2rem;
+  color: #3a3a3a;
 
   @media (max-width: 768px) {
     font-size: 1.5rem;
@@ -35,6 +40,20 @@ const Greeting = styled.h2`
 
   @media (max-width: 400px) {
     font-size: 1.2rem;
+  }
+`;
+
+const ListWork = styled.p`
+  margin-left: 10px;
+  font-size: 1.5rem;
+  color: #5a5a5a;
+
+  @media (max-width: 768px) {
+    font-size: 1rem;
+  }
+
+  @media (max-width: 400px) {
+    font-size: 0.8rem;
   }
 `;
 
@@ -60,6 +79,8 @@ const CardStyle = styled(Card)`
   flex-direction: column;
   justify-content: space-between;
   align-items: stretch;
+  margin-top: 30px;
+  margin-left: 20px;
 
   @media (max-width: 768px) {
     aspect-ratio: 3 / 2;
@@ -84,15 +105,19 @@ const TightTypography = styled(Typography)`
 
 const NewPresentationButton = styled.button`
   margin-bottom: 20px;
+  margin-left: 20px;
   padding: 10px 20px;
   font-size: 16px;
   cursor: pointer;
-  background-color: #007bff;
+  background-color: #ff7b54;
   color: white;
   border: none;
   border-radius: 5px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s, transform 0.2s;
   &:hover {
-      background-color: #0056b3;
+    background-color: #e66a48;
+    transform: scale(1.05);
   }
 
   @media (max-width: 768px) {
@@ -109,12 +134,16 @@ const LogoutButton = styled.button`
   padding: 10px;
   font-size: 14px;
   cursor: pointer;
-  background-color: #f44336;
+  background-color: #e74c3c;
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s, transform 0.2s;
+
   &:hover {
-  background-color: #d32f2f;
+    background-color: #c0392b;
+    transform: scale(1.05);
   }
 
   @media (max-width: 768px) {
@@ -195,12 +224,13 @@ function Dashboard() {
   return (
     <DashboardWrapper>
       <Header>
-        <Greeting>Hello!</Greeting>
+        <Greeting>Hello! Ready for Project?</Greeting>
         <LogoutButton onClick={handleLogout}>Logout</LogoutButton>
       </Header>
 
       <NewPresentationButton onClick={() => (document.getElementById('newPresentationModal').style.display = 'block')}>New Presentation</NewPresentationButton>
 
+      <ListWork>Your Working list:</ListWork>
       <div id="newPresentationModal" className="w3-modal">
         <div className="w3-modal-content w3-animate-top w3-card-4" style={{ padding: '20px', width: '400px' }}>
           <header className="w3-container w3-teal">

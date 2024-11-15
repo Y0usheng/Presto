@@ -5,6 +5,10 @@ import styled from 'styled-components';
 const StyleDiv = styled.div`
   display: flex;
   height: 100vh;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
 `;
 
 const LeftSection = styled.div`
@@ -19,6 +23,11 @@ const LeftSection = styled.div`
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+
+  @media (max-width: 768px) {
+    flex: 1;
+    height: 50vh;
+  }
 `;
 
 const TextBackground = styled.div`
@@ -26,6 +35,10 @@ const TextBackground = styled.div`
   padding: 10px;
   border-radius: 5px;
   width: 80%;
+
+  @media (max-width: 400px) {
+    width: 90%;
+  }
 `;
 
 
@@ -33,11 +46,27 @@ const Heading = styled.h1`
   font-size: 4rem;
   color: white;
   text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+
+  @media (max-width: 768px) {
+    font-size: 2.5rem;
+  }
+
+  @media (max-width: 400px) {
+    font-size: 2rem;
+  }
 `;
 
 const Text = styled.p`
   font-size: 1.4rem;
   color: white;
+
+  @media (max-width: 768px) {
+    font-size: 1.2rem;
+  }
+
+  @media (max-width: 400px) {
+    font-size: 1rem;
+  }
 `;
 
 const RightSection = styled.div`
@@ -48,6 +77,10 @@ const RightSection = styled.div`
   justify-content: center;
   padding: 20px;
   background-color: #ffffff;
+
+  @media (max-width: 768px) {
+    height: 50vh;
+  }
 `;
 
 const H2 = styled.h2`
@@ -57,7 +90,7 @@ const H2 = styled.h2`
 `;
 
 const Input = styled.input`
-  width: 80%;
+  width: 85%;
   padding: 12px;
   margin-bottom: 20px;
   margin-left: 30px;
@@ -85,6 +118,18 @@ const Button = styled.button`
 
   &:hover {
     background-color: #35a79c;
+  }
+
+  @media (max-width: 768px) {
+    width: 70%;
+    font-size: 20px;
+    padding: 8px 16px;
+  }
+
+  @media (max-width: 400px) {
+    width: 80%;
+    font-size: 18px;
+    padding: 6px 12px;
   }
 `;
 

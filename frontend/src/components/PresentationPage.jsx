@@ -255,3 +255,200 @@ function PresentationPage() {
       reader.readAsDataURL(file);
     }
   };
+
+  const handleAddSlide = async () => {
+    try {
+      const newSlides = [...slides, { page: `Slide ${slides.length + 1}` }];
+      setSlides(newSlides);
+
+      const updatedPresentation = { ...presentation, slides: newSlides, slidesCount: newSlides.length };
+      setPresentation(updatedPresentation);
+
+      const response = await fetch(`http://localhost:5005/store`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const updatedStore = data.store.map((p) => (p.id === parseInt(id) ? updatedPresentation : p));
+
+        const updateResponse = await fetch(`http://localhost:5005/store`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+          body: JSON.stringify({ ...data, store: updatedStore }),
+        });
+
+        if (updateResponse.ok) {
+          setPresentation(updatedPresentation);
+        } else {
+          console.error('Failed to update presentation');
+        }
+      }
+    } catch (error) {
+      console.error('Error adding slide:', error);
+    }
+  };
+
+  const handleDeleteSlide = async () => {
+    if (slides.length === 1) {
+      alert('Cannot delete the only slide. Please delete the presentation instead.');
+      return;
+    }
+
+    const newSlides = slides.filter((_, index) => index !== currentSlideIndex);
+    setSlides(newSlides);
+
+    const updatedPresentation = { ...presentation, slides: newSlides, slidesCount: newSlides.length };
+
+    try {
+      const response = await fetch(`http://localhost:5005/store`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const updatedStore = data.store.map((p) => (p.id === parseInt(id) ? updatedPresentation : p));
+
+        const updateResponse = await fetch(`http://localhost:5005/store`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+          body: JSON.stringify({ ...data, store: updatedStore }),
+        });
+
+        if (updateResponse.ok) {
+          setPresentation(updatedPresentation);
+          if (currentSlideIndex > 0) {
+            setCurrentSlideIndex(currentSlideIndex - 1);
+          }
+        } else {
+          console.error('Failed to update presentation');
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting slide:', error);
+    }
+  };
+
+  const handleSlideNavigation = (direction) => {
+    if (direction === 'next' && currentSlideIndex < slides.length - 1) {
+      setCurrentSlideIndex(currentSlideIndex + 1);
+    } else if (direction === 'prev' && currentSlideIndex > 0) {
+      setCurrentSlideIndex(currentSlideIndex - 1);
+    }
+  };
+
+  const handleAddTextElement = () => {
+    setAddTextModalOpen(true);
+  };
+
+  const handleAddText = async () => {
+    if (textContent.trim() === '') return;
+
+    const updatedSlides = slides.map((slide, index) =>
+      index === currentSlideIndex
+        ? {
+          ...slide,
+          elements: [
+            ...(slide.elements || []),
+            {
+              type: 'text',
+              size: textSize,
+              text: textContent,
+              fontSize: fontSize,
+              color: textColor,
+              position: textPosition,
+              fontFamily: fontFamily,
+              layer: (slide.elements || []).length,
+            },
+          ],
+        }
+        : slide
+    );
+
+    setSlides(updatedSlides);
+    setAddTextModalOpen(false);
+    resetTextFormFields();
+
+    await updateStoreWithSlides(updatedSlides);
+  };
+
+  const handleEditText = async () => {
+    if (textContent.trim() === '' || editElementIndex === null) return;
+
+    const updatedSlides = slides.map((slide, index) =>
+      index === currentSlideIndex
+        ? {
+          ...slide,
+          elements: slide.elements.map((el, idx) =>
+            idx === editElementIndex
+              ? {
+                ...el,
+                text: textContent,
+                size: textSize,
+                fontSize: fontSize,
+                color: textColor,
+                fontFamily: fontFamily,
+                position: textPosition,
+              }
+              : el
+          ),
+        }
+        : slide
+    );
+
+    setSlides(updatedSlides);
+    setEditTextModalOpen(false);
+    setEditElementIndex(null);
+    resetTextFormFields();
+
+    await updateStoreWithSlides(updatedSlides);
+  };
+
+  const updateStoreWithSlides = async (updatedSlides) => {
+    try {
+      const response = await fetch(`http://localhost:5005/store`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const updatedStore = data.store.map((p) => p.id === parseInt(id) ? { ...p, slides: updatedSlides } : p);
+
+        const updateResponse = await fetch(`http://localhost:5005/store`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+          body: JSON.stringify({ ...data, store: updatedStore }),
+        });
+
+        if (!updateResponse.ok) {
+          console.error('Failed to update presentation');
+        }
+      }
+    } catch (error) {
+      console.error('Error updating presentation:', error);
+    }
+  };
+
+  const resetTextFormFields = () => {
+    setTextContent('');
+    setTextSize(50);
+    setFontSize(1);
+    setTextColor('#000000');
+    setFontFamily('Arial');
+    setTextPosition({ x: 0, y: 0 });
+  };

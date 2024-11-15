@@ -5,32 +5,69 @@ import 'w3-css/w3.css';
 import { Card, CardContent, Typography } from '@mui/material';
 
 const DashboardWrapper = styled.div`
-    padding: 20px;
+  padding: 20px;
+  
+  @media (max-width: 768px) {
+    padding: 10px;
+  }
 `;
 
 const Header = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
 `;
 
 const Greeting = styled.h2`
-    margin: 0;
+  margin: 0;
+  font-size: 2rem;
+
+  @media (max-width: 768px) {
+    font-size: 1.5rem;
+  }
+
+  @media (max-width: 400px) {
+    font-size: 1.2rem;
+  }
 `;
 
 const PresentationGrid = styled.div`
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 30px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 30px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 20px;
+  }
+
+  @media (max-width: 400px) {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 15px;
+  }
 `;
 
 const CardStyle = styled(Card)`
-    aspect-ratio: 2 / 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    align-items: stretch;
+  aspect-ratio: 2 / 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: stretch;
+
+  @media (max-width: 768px) {
+    aspect-ratio: 3 / 2;
+  }
+
+  @media (max-width: 400px) {
+    aspect-ratio: 1 / 1;
+  }
 `;
 
 const CustomCardContent = styled(CardContent)`
@@ -46,30 +83,48 @@ const TightTypography = styled(Typography)`
 `;
 
 const NewPresentationButton = styled.button`
-    margin-bottom: 20px;
-    padding: 10px 20px;
-    font-size: 16px;
-    cursor: pointer;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    &:hover {
-        background-color: #0056b3;
-    }
+  margin-bottom: 20px;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  &:hover {
+      background-color: #0056b3;
+  }
+
+  @media (max-width: 768px) {
+    width: 100%;
+    font-size: 14px;
+  }
+
+  @media (max-width: 400px) {
+    font-size: 12px;
+  }
 `;
 
 const LogoutButton = styled.button`
-    padding: 10px;
-    font-size: 14px;
-    cursor: pointer;
-    background-color: #f44336;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    &:hover {
-    background-color: #d32f2f;
-    }
+  padding: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  &:hover {
+  background-color: #d32f2f;
+  }
+
+  @media (max-width: 768px) {
+    width: 100%;
+    font-size: 12px;
+  }
+
+  @media (max-width: 400px) {
+    font-size: 10px;
+  }
 `;
 
 function Dashboard() {
@@ -208,7 +263,7 @@ function Dashboard() {
                   {presentation.description || 'No description provided'}
                 </TightTypography>
                 <TightTypography variant="body2" color="text.secondary">
-                                    Slides: {presentation.slidesCount || 0}
+                  Slides: {presentation.slidesCount || 0}
                 </TightTypography>
               </CustomCardContent>
             </CardStyle>

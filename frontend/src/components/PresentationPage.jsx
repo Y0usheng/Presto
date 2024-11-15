@@ -15,41 +15,132 @@ SyntaxHighlighter.registerLanguage('python', python);
 SyntaxHighlighter.registerLanguage('c', c);
 
 const SlideArea = styled.div`
-    width: 600px;
-    height: 400px;
-    border: 1px solid #ccc;
-    position: relative;
-    margin-top: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: ${(props) => props.background};
+  width:90vw;
+  height: 90vh;
+  max-width: 1000px;  
+  max-height: 800px;
+  border: 1px solid #ccc;
+  position: relative;
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: ${(props) => props.background};
+
+  @media (max-width: 768px) {
+    max-width: 500px;  
+    max-height: 300px;
+  }
+
+  @media (max-width: 480px) {
+    max-width: 400px;  
+    max-height: 250px;
+  }
 `;
 
 const SlideNumber = styled.div`
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 50px;
-    height: 50px;
-    font-size: 1em;
-    color: #000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 50px;
+  height: 50px;
+  font-size: 1em;
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  @media (max-width: 768px) {
+    width: 40px;
+    height: 40px;
+    font-size: 0.9em;
+  }
+
+  @media (max-width: 480px) {
+    width: 30px;
+    height: 30px;
+    font-size: 0.8em;
+  }
 `;
 
 const VideoWrapper = styled.div`
-    position: absolute;
-    top: ${(props) => props.position.y}%;
-    left: ${(props) => props.position.x}%;
-    width: ${(props) => props.size}%;
-    border: 2px dashed #ccc;
-    padding: 5px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  position: absolute;
+  top: ${(props) => props.position.y}%;
+  left: ${(props) => props.position.x}%;
+  width: ${(props) => props.size}%;
+  border: 2px dashed #ccc;
+  padding: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  @media (max-width: 768px) {
+    width: ${(props) => props.size * 0.9}%;
+  }
+
+  @media (max-width: 480px) {
+    width: ${(props) => props.size * 0.8}%;
+  }
+`;
+
+const Editing = styled.p`
+  margin-top: 20px;
+  margin-left: 10px;
+  font-size: 1.5rem;
+  color: #5a5a5a;
+
+  @media (max-width: 768px) {
+    font-size: 1rem;
+  }
+
+  @media (max-width: 400px) {
+    font-size: 0.8rem;
+  }
+`;
+
+const Description = styled.p`
+  margin-left: 10px;
+  margin-button: 30px;
+  font-size: 1.7rem;
+
+  @media (max-width: 768px) {
+    font-size: 1.5rem;
+  }
+
+  @media (max-width: 400px) {
+    font-size: 1rem;
+  }
+`;
+
+const Slide = styled.p`
+  margin-top: 20px;
+  margin-left: 10px;
+  font-size: 1.5rem;
+  color: #5a5a5a;
+
+  @media (max-width: 768px) {
+    font-size: 1rem;
+  }
+
+  @media (max-width: 400px) {
+    font-size: 0.8rem;
+  }
+`;
+
+const AddIn = styled.p`
+  margin-top: 20px;
+  margin-left: 10px;
+  font-size: 1.5rem;
+  color: #5a5a5a;
+
+  @media (max-width: 768px) {
+    font-size: 1rem;
+  }
+
+  @media (max-width: 400px) {
+    font-size: 0.8rem;
+  }
 `;
 
 function PresentationPage() {
@@ -717,9 +808,10 @@ function PresentationPage() {
         </Toolbar>
       </AppBar>
 
-      <p>Slide description: {presentation?.description}</p>
+      <Description>Slide description: {presentation?.description}</Description>
 
       {/* All button implemented */}
+      <Editing>Editing:</Editing>
       <Button variant="outlined" onClick={() => setThumbnailModalOpen(true)} style={{ marginLeft: '10px' }}>
         Update Thumbnail
       </Button>
@@ -729,11 +821,12 @@ function PresentationPage() {
       <Button variant="contained" color="error" onClick={handleDelete} style={{ marginLeft: '10px' }}>
         Delete Presentation
       </Button>
+
+      <Slide>Slide Change:</Slide>
       <Button variant="outlined" onClick={handleAddSlide} style={{ marginLeft: '10px' }}>Add Slide</Button>
       <Button variant="outlined" color="error" onClick={handleDeleteSlide} style={{ marginLeft: '10px' }}>Delete Slide</Button>
-      <br></br>
-      <br></br>
-      <br></br>
+
+      <AddIn>Add in Slide:</AddIn>
       <Button variant="outlined" onClick={handleAddTextElement} style={{ marginLeft: '10px' }}>Add Text Element</Button>
       <Button variant="outlined" onClick={() => setAddImageModalOpen(true)} style={{ marginLeft: '10px' }}>Add Image</Button>
       <Button variant="outlined" onClick={() => setAddVideoModalOpen(true)} style={{ marginLeft: '10px' }}>Add Video</Button>
@@ -781,6 +874,10 @@ function PresentationPage() {
                         padding: '5px',
                         cursor: 'pointer',
                         fontFamily: element.fontFamily,
+                        textAlign: 'left',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
                       }}
                       onDoubleClick={() => {
                         setTextContent(element.text);
@@ -910,7 +1007,11 @@ function PresentationPage() {
                         padding: '10px',
                         cursor: 'pointer',
                         backgroundColor: '#f5f5f5',
-                        overflow: 'auto'
+                        overflow: 'auto',
+                        textAlign: 'left',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
                       }}
                       onDoubleClick={() => {
                         setCodeContent(element.code);

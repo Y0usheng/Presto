@@ -1035,3 +1035,131 @@ function PresentationPage() {
           <Button variant="contained" onClick={handleEditImage} style={{ marginTop: '20px' }}>Save Changes</Button>
         </Box>
       </Modal>
+
+      <Modal open={addVideoModalOpen} onClose={() => setAddVideoModalOpen(false)}>
+        <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', boxShadow: 24, p: 4 }}>
+          <Typography variant="h6" gutterBottom>Add Video</Typography>
+          <TextField fullWidth label="Video URL" value={videoSource} onChange={(e) => setVideoSource(e.target.value)} margin="normal" />
+          <TextField fullWidth label="Size (%)" type="number" value={videoSize} onChange={(e) => setVideoSize(e.target.value)} margin="normal" />
+          <FormControlLabel
+            control={<Checkbox checked={videoAutoPlay} onChange={(e) => setVideoAutoPlay(e.target.checked)} />}
+            label="Auto-Play"
+          />
+          <Button variant="contained" onClick={handleAddVideo} style={{ marginTop: '20px' }}>Add Video</Button>
+        </Box>
+      </Modal>
+
+      <Modal open={editVideoModalOpen} onClose={() => setEditVideoModalOpen(false)}>
+        <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', boxShadow: 24, p: 4 }}>
+          <Typography variant="h6" gutterBottom>Edit Video</Typography>
+          <TextField fullWidth label="Video URL" value={videoSource} onChange={(e) => setVideoSource(e.target.value)} margin="normal" />
+          <TextField fullWidth label="Size (%)" type="number" value={videoSize} onChange={(e) => setVideoSize(e.target.value)} margin="normal" />
+          <FormControlLabel
+            control={<Checkbox checked={videoAutoPlay} onChange={(e) => setVideoAutoPlay(e.target.checked)} />}
+            label="Auto-Play"
+          />
+          <Button variant="contained" onClick={handleEditVideo} style={{ marginTop: '20px' }}>Save Changes</Button>
+        </Box>
+      </Modal>
+
+      <Modal open={addCodeModalOpen} onClose={() => setAddCodeModalOpen(false)}>
+        <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 500, bgcolor: 'background.paper', boxShadow: 24, p: 4, }}>
+          <Typography variant="h6" gutterBottom>
+            Add Code Block
+          </Typography>
+          <InputLabel id="language-label">Language</InputLabel>
+          <Select labelId="language-label" value={codeLanguage} onChange={(e) => setCodeLanguage(e.target.value)} fullWidth margin="dense" >
+            <MenuItem value="javascript">JavaScript</MenuItem>
+            <MenuItem value="python">Python</MenuItem>
+            <MenuItem value="c">C</MenuItem>
+          </Select>
+          <TextField fullWidth label="Code Content" value={codeContent} onChange={(e) => setCodeContent(e.target.value)} margin="dense" multiline rows={6} />
+          <TextField fullWidth label="Font Size (em)" type="number" value={codeFontSize} onChange={(e) => setCodeFontSize(e.target.value)} margin="dense" />
+          <Button variant="contained" onClick={handleAddCode} style={{ marginTop: '20px' }}> Add Code</Button>
+        </Box>
+      </Modal>
+
+      <Modal open={backgroundModalOpen} onClose={() => setBackgroundModalOpen(false)}>
+        <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 500, bgcolor: 'background.paper', boxShadow: 24, p: 4 }}>
+          <Typography variant="h6" gutterBottom>Change Background</Typography>
+
+          <InputLabel id="background-type-label">Background Type</InputLabel>
+          <Select
+            labelId="background-type-label"
+            value={backgroundType}
+            onChange={(e) => setBackgroundType(e.target.value)}
+            fullWidth
+            margin="normal"
+          >
+            <MenuItem value="solid">Solid Color</MenuItem>
+            <MenuItem value="gradient">Gradient</MenuItem>
+            <MenuItem value="image">Image</MenuItem>
+          </Select>
+
+          {backgroundType === 'solid' && (
+            <TextField
+              fullWidth
+              label="Background Color"
+              type="color"
+              value={backgroundColor}
+              onChange={(e) => setBackgroundColor(e.target.value)}
+              margin="normal"
+            />
+          )}
+
+          {backgroundType === 'gradient' && (
+            <>
+              <InputLabel id="gradient-direction-label">Gradient Direction</InputLabel>
+              <Select
+                labelId="gradient-direction-label"
+                value={gradientDirection}
+                onChange={(e) => setGradientDirection(e.target.value)}
+                fullWidth
+                margin="normal"
+              >
+                <MenuItem value="to right">Left to Right</MenuItem>
+                <MenuItem value="to bottom">Top to Bottom</MenuItem>
+              </Select>
+              <TextField
+                fullWidth
+                label="Start Color"
+                type="color"
+                value={gradientColors.start}
+                onChange={(e) => setGradientColors({ ...gradientColors, start: e.target.value })}
+                margin="normal"
+              />
+              <TextField
+                fullWidth
+                label="End Color"
+                type="color"
+                value={gradientColors.end}
+                onChange={(e) => setGradientColors({ ...gradientColors, end: e.target.value })}
+                margin="normal"
+              />
+            </>
+          )}
+
+          {backgroundType === 'image' && (
+            <input
+              type="file"
+              onChange={(e) => {
+                const file = e.target.files[0];
+                if (file) {
+                  const reader = new FileReader();
+                  reader.onloadend = () => {
+                    setBackgroundImage(reader.result);
+                  };
+                  reader.readAsDataURL(file);
+                }
+              }}
+            />
+          )}
+
+          <Button variant="contained" onClick={handleBackgroundChange} style={{ marginTop: '20px' }}>Apply Background</Button>
+        </Box>
+      </Modal>
+    </div>
+  );
+}
+
+export default PresentationPage;

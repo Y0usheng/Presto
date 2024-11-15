@@ -145,7 +145,7 @@ function PresentationPage() {
     }
   };
 
-  // 
+  // Gain the list of the presentation
   useEffect(() => {
     const fetchPresentation = async () => {
       try {

@@ -847,3 +847,191 @@ function PresentationPage() {
                 } else if (element.type === 'code') {
                   let languageIcon;
                   let languageName;
+
+                  switch (element.language) {
+                    case 'javascript':
+                      languageIcon = <SiJavascript color="#F0DB4F" size={24} />;
+                      languageName = "JavaScript";
+                      break;
+                    case 'python':
+                      languageIcon = <SiPython color="#306998" size={24} />;
+                      languageName = "Python";
+                      break;
+                    case 'c':
+                      languageIcon = <SiC color="#00599C" size={24} />;
+                      languageName = "C";
+                      break;
+                    default:
+                      languageName = element.language;
+                      break;
+                  }
+
+                  return (
+                    <div
+                      key={index}
+                      style={{
+                        position: 'absolute',
+                        top: `${element.position.y}%`,
+                        left: `${element.position.x}%`,
+                        width: '80%',
+                        border: '1px solid grey',
+                        padding: '10px',
+                        cursor: 'pointer',
+                        backgroundColor: '#f5f5f5',
+                        overflow: 'auto'
+                      }}
+                      onDoubleClick={() => {
+                        setCodeContent(element.code);
+                        setCodeLanguage(element.language);
+                        setCodeFontSize(element.fontSize);
+                        setAddCodeModalOpen(true);
+                      }}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        const updatedElements = slides[currentSlideIndex].elements.filter((_, i) => i !== index);
+                        const updatedSlides = slides.map((slide, slideIndex) =>
+                          slideIndex === currentSlideIndex ? { ...slide, elements: updatedElements } : slide
+                        );
+                        setSlides(updatedSlides);
+                        updateStoreWithSlides(updatedSlides);
+                      }}
+                    >
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        marginBottom: '8px',
+                        backgroundColor: '#e0e0e0',
+                        padding: '5px',
+                        borderRadius: '6px 6px 0 0',
+                      }}>
+                        {languageIcon}
+                        <span style={{ marginLeft: '8px', fontWeight: 'bold' }}>{languageName}</span>
+                      </div>
+
+                      <SyntaxHighlighter
+                        language={element.language}
+                        style={docco}
+                        customStyle={{ fontSize: `${element.fontSize}em`, whiteSpace: 'pre-wrap' }}
+                      >
+                        {element.code}
+                      </SyntaxHighlighter>
+                    </div>
+                  );
+                }
+                return null;
+              })}
+            </SlideArea>
+          </div>
+        </div>
+      )}
+
+      <Modal open={editTitleOpen} onClose={() => setEditTitleOpen(false)}>
+        <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', boxShadow: 24, p: 4, }}>
+          <h2>Edit Presentation Title</h2>
+          <TextField fullWidth label="Title" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} margin="normal" />
+          <Button variant="contained" onClick={handleTitleEdit}>Save </Button>
+        </Box>
+      </Modal>
+
+      <Modal open={thumbnailModalOpen} onClose={() => setThumbnailModalOpen(false)}>
+        <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', boxShadow: 24, p: 4, }}>
+          <Typography variant="h6" mb={2}>
+            Upload New Thumbnail
+          </Typography>
+          <input type="file" onChange={handleThumbnailUpdate} />
+        </Box>
+      </Modal>
+
+      <Modal open={addTextModalOpen} onClose={() => setAddTextModalOpen(false)}>
+        <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', boxShadow: 24, p: 4 }}>
+          <Typography variant="h6" gutterBottom>Add Text Element</Typography>
+          <TextField fullWidth label="Text Content" value={textContent} onChange={(e) => setTextContent(e.target.value)} margin="normal" />
+          <TextField fullWidth label="Size (%)" type="number" value={textSize} onChange={(e) => setTextSize(e.target.value)} margin="normal" />
+          <TextField fullWidth label="Font Size (em)" type="number" value={fontSize} onChange={(e) => setFontSize(e.target.value)} margin="normal" />
+          <TextField fullWidth label="Text Color" type="text" value={textColor} onChange={(e) => setTextColor(e.target.value)} margin="normal" />
+          <InputLabel id="font-family-label">Font Family</InputLabel>
+          <Select
+            labelId="font-family-label"
+            value={fontFamily}
+            onChange={(e) => setFontFamily(e.target.value)}
+            fullWidth
+            margin="normal"
+          >
+            <MenuItem value="Arial">Arial</MenuItem>
+            <MenuItem value="Times New Roman">Times New Roman</MenuItem>
+            <MenuItem value="Courier New">Courier New</MenuItem>
+          </Select>
+          <TextField fullWidth label="Position X (%)" type="number" value={textPosition.x} onChange={(e) => setTextPosition({ ...textPosition, x: e.target.value })} margin="normal" />
+          <TextField fullWidth label="Position Y (%)" type="number" value={textPosition.y} onChange={(e) => setTextPosition({ ...textPosition, y: e.target.value })} margin="normal" />
+          <Button variant="contained" onClick={handleAddText} style={{ marginTop: '20px' }}>Add Text</Button>
+        </Box>
+      </Modal>
+
+      <Modal open={editTextModalOpen} onClose={() => setEditTextModalOpen(false)}>
+        <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', boxShadow: 24, p: 4 }}>
+          <Typography variant="h6" gutterBottom>Edit Text Element</Typography>
+          <TextField fullWidth label="Text Content" value={textContent} onChange={(e) => setTextContent(e.target.value)} margin="normal" />
+          <TextField fullWidth label="Size (%)" type="number" value={textSize} onChange={(e) => setTextSize(e.target.value)} margin="normal" />
+          <TextField fullWidth label="Font Size (em)" type="number" value={fontSize} onChange={(e) => setFontSize(e.target.value)} margin="normal" />
+          <TextField fullWidth label="Text Color" type="text" value={textColor} onChange={(e) => setTextColor(e.target.value)} margin="normal" />
+          <InputLabel id="font-family-label">Font Family</InputLabel>
+          <Select
+            labelId="font-family-label"
+            value={fontFamily}
+            onChange={(e) => setFontFamily(e.target.value)}
+            fullWidth
+            margin="normal"
+          >
+            <MenuItem value="Arial">Arial</MenuItem>
+            <MenuItem value="Times New Roman">Times New Roman</MenuItem>
+            <MenuItem value="Courier New">Courier New</MenuItem>
+          </Select>
+          <TextField fullWidth label="Position X (%)" type="number" value={textPosition.x} onChange={(e) => setTextPosition({ ...textPosition, x: e.target.value })} margin="normal" />
+          <TextField fullWidth label="Position Y (%)" type="number" value={textPosition.y} onChange={(e) => setTextPosition({ ...textPosition, y: e.target.value })} margin="normal" />
+          <Button variant="contained" onClick={handleEditText} style={{ marginTop: '20px' }}>Save Changes</Button>
+        </Box>
+      </Modal>
+
+      <Modal open={addImageModalOpen} onClose={() => setAddImageModalOpen(false)}>
+        <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', boxShadow: 24, p: 4 }}>
+          <Typography variant="h6" gutterBottom>Add Image</Typography>
+          <TextField fullWidth label="Image URL" value={imageSource} onChange={(e) => setImageSource(e.target.value)} margin="normal" />
+          <input type="file" onChange={(e) => {
+            const file = e.target.files[0];
+            if (file) {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                setImageSource(reader.result);
+              };
+              reader.readAsDataURL(file);
+            }
+          }} />
+          <TextField fullWidth label="Size (%)" type="number" value={imageSize} onChange={(e) => setImageSize(e.target.value)} margin="normal" />
+          <TextField fullWidth label="Alt Text" value={altText} onChange={(e) => setAltText(e.target.value)} margin="normal" />
+          <TextField fullWidth label="Position X (%)" type="number" value={imagePosition.x} onChange={(e) => setImagePosition({ ...imagePosition, x: e.target.value })} margin="normal" />
+          <TextField fullWidth label="Position Y (%)" type="number" value={imagePosition.y} onChange={(e) => setImagePosition({ ...imagePosition, y: e.target.value })} margin="normal" />
+          <Button variant="contained" onClick={handleAddImage} style={{ marginTop: '20px' }}>Add Image</Button>
+        </Box>
+      </Modal>
+
+      <Modal open={editImageModalOpen} onClose={() => setEditImageModalOpen(false)}>
+        <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', boxShadow: 24, p: 4 }}>
+          <Typography variant="h6" gutterBottom>Edit Image</Typography>
+          <TextField fullWidth label="Image URL" value={imageSource} onChange={(e) => setImageSource(e.target.value)} margin="normal" />
+          <input type="file" onChange={(e) => {
+            const file = e.target.files[0];
+            if (file) {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                setImageSource(reader.result);
+              };
+              reader.readAsDataURL(file);
+            }
+          }} />
+          <TextField fullWidth label="Size (%)" type="number" value={imageSize} onChange={(e) => setImageSize(e.target.value)} margin="normal" />
+          <TextField fullWidth label="Alt Text" value={altText} onChange={(e) => setAltText(e.target.value)} margin="normal" />
+          <TextField fullWidth label="Position X (%)" type="number" value={imagePosition.x} onChange={(e) => setImagePosition({ ...imagePosition, x: e.target.value })} margin="normal" />
+          <TextField fullWidth label="Position Y (%)" type="number" value={imagePosition.y} onChange={(e) => setImagePosition({ ...imagePosition, y: e.target.value })} margin="normal" />
+          <Button variant="contained" onClick={handleEditImage} style={{ marginTop: '20px' }}>Save Changes</Button>
+        </Box>
+      </Modal>

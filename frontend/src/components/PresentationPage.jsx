@@ -647,3 +647,203 @@ function PresentationPage() {
       console.error('Error adding code:', error);
     }
   };
+
+  const handleBackgroundChange = async () => {
+    const updatedSlides = slides.map((slide, index) =>
+      index === currentSlideIndex
+        ? {
+          ...slide,
+          background: {
+            type: backgroundType,
+            color: backgroundColor,
+            gradient: {
+              direction: gradientDirection,
+              start: gradientColors.start,
+              end: gradientColors.end,
+            },
+            image: backgroundImage,
+          },
+        }
+        : slide
+    );
+
+    setSlides(updatedSlides);
+    setBackgroundModalOpen(false);
+  };
+
+  const getSlideBackgroundStyle = (slide) => {
+    if (!slide?.background) {
+      return '#ffffff';
+    }
+    if (slide.background.type === 'solid') {
+      return slide.background.color;
+    } else if (slide.background.type === 'gradient') {
+      return `linear-gradient(${slide.background.gradient.direction}, ${slide.background.gradient.start}, ${slide.background.gradient.end})`;
+    } else if (slide.background.type === 'image') {
+      return `url(${slide.background.image})`;
+    }
+    return '#ffffff';
+  };
+
+  return (
+    <div>
+      <AppBar position="static" color="default">
+        <Toolbar>
+          <IconButton edge="start" color="inherit" onClick={() => navigate('/dashboard')} aria-label="back">
+            <ArrowBackIcon />
+          </IconButton>
+          <Typography variant="h4" style={{ flexGrow: 1 }}>
+            Slide title: {presentation?.name}
+          </Typography>
+          <Button color="inherit" onClick={() => localStorage.removeItem('token') && navigate('/login')}>
+            Log out
+          </Button>
+        </Toolbar>
+      </AppBar>
+
+      <p>Slide description: {presentation?.description}</p>
+
+      <Button variant="outlined" onClick={() => setThumbnailModalOpen(true)} style={{ marginLeft: '10px' }}>
+        Update Thumbnail
+      </Button>
+      <Button variant="outlined" onClick={() => setEditTitleOpen(true)} style={{ marginLeft: '10px' }}>
+        Edit Title
+      </Button>
+      <Button variant="contained" color="error" onClick={handleDelete} style={{ marginLeft: '10px' }}>
+        Delete Presentation
+      </Button>
+      <Button variant="outlined" onClick={handleAddSlide} style={{ marginLeft: '10px' }}>Add Slide</Button>
+      <Button variant="outlined" color="error" onClick={handleDeleteSlide} style={{ marginLeft: '10px' }}>Delete Slide</Button>
+      <br></br>
+      <br></br>
+      <br></br>
+      <Button variant="outlined" onClick={handleAddTextElement} style={{ marginLeft: '10px' }}>Add Text Element</Button>
+      <Button variant="outlined" onClick={() => setAddImageModalOpen(true)} style={{ marginLeft: '10px' }}>Add Image</Button>
+      <Button variant="outlined" onClick={() => setAddVideoModalOpen(true)} style={{ marginLeft: '10px' }}>Add Video</Button>
+      <Button variant="outlined" onClick={handleAddCodeElement} style={{ marginLeft: '10px' }}>Add Code Block</Button>
+      <Button variant="outlined" onClick={() => setBackgroundModalOpen(true)} style={{ marginLeft: '10px' }}>Change Background</Button>
+      <Button variant="outlined" onClick={() => window.open(`/preview/${id}`, '_blank')} style={{ marginLeft: '10px' }}> Preview</Button>
+
+      {slides.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', position: 'relative' }}>
+          <div style={{ textAlign: 'center', marginTop: '20px' }}>
+            <Button
+              disabled={currentSlideIndex === 0}
+              onClick={() => handleSlideNavigation('prev')}
+            >
+              Previous
+            </Button>
+            <span>Slide {currentSlideIndex + 1} of {slides.length}</span>
+            <Button
+              disabled={currentSlideIndex === slides.length - 1}
+              onClick={() => handleSlideNavigation('next')}
+            >
+              Next
+            </Button>
+            <Typography variant="h4">{slides[currentSlideIndex]?.page}</Typography>
+          </div>
+
+          <div style={{ textAlign: 'center', marginTop: '10px' }}>
+            <SlideArea background={getSlideBackgroundStyle(slides[currentSlideIndex])}>
+              <SlideNumber>{currentSlideIndex + 1}</SlideNumber>
+              {slides[currentSlideIndex]?.elements?.map((element, index) => {
+                if (element.type === 'text') {
+                  return (
+                    <div
+                      key={index}
+                      style={{
+                        position: 'absolute',
+                        top: `${element.position.y}%`,
+                        left: `${element.position.x}%`,
+                        width: `${element.size}%`,
+                        border: '1px solid grey',
+                        padding: '5px',
+                        cursor: 'pointer',
+                        fontFamily: element.fontFamily,
+                      }}
+                      onDoubleClick={() => {
+                        setTextContent(element.text);
+                        setTextSize(element.size);
+                        setFontSize(element.fontSize);
+                        setTextColor(element.color);
+                        setFontFamily(element.fontFamily);
+                        setTextPosition(element.position);
+                        setEditElementIndex(index);
+                        setEditTextModalOpen(true);
+                      }}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        const updatedElements = slides[currentSlideIndex].elements.filter((_, i) => i !== index);
+                        const updatedSlides = slides.map((slide, slideIndex) =>
+                          slideIndex === currentSlideIndex ? { ...slide, elements: updatedElements } : slide
+                        );
+                        setSlides(updatedSlides);
+                        updateStoreWithSlides(updatedSlides);
+                      }}
+                    >
+                      <span style={{ fontSize: `${element.fontSize}em`, color: element.color }}>
+                        {element.text}
+                      </span>
+                    </div>
+                  );
+                } else if (element.type === 'image') {
+                  return (
+                    <img
+                      key={index}
+                      src={element.source}
+                      alt={element.alt}
+                      style={{
+                        position: 'absolute',
+                        top: `${element.position.y}%`,
+                        left: `${element.position.x}%`,
+                        width: `${element.size}%`,
+                        cursor: 'pointer',
+                        border: '1px solid grey',
+                      }}
+                      onDoubleClick={() => {
+                        setImageSource(element.source);
+                        setImageSize(element.size);
+                        setAltText(element.alt);
+                        setImagePosition(element.position);
+                        setEditElementIndex(index);
+                        setEditImageModalOpen(true);
+                      }}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        const updatedElements = slides[currentSlideIndex].elements.filter((_, i) => i !== index);
+                        const updatedSlides = slides.map((slide, slideIndex) =>
+                          slideIndex === currentSlideIndex ? { ...slide, elements: updatedElements } : slide
+                        );
+                        setSlides(updatedSlides);
+                        updateStoreWithSlides(updatedSlides);
+                      }}
+                    />
+                  );
+                } else if (element.type === 'video') {
+                  return (
+                    <VideoWrapper
+                      key={index}
+                      size={element.size}
+                      position={element.position}
+                      onDoubleClick={() => {
+                        setVideoSource(element.source);
+                        setVideoSize(element.size);
+                        setVideoAutoPlay(element.autoPlay);
+                        setEditElementIndex(index);
+                        setEditVideoModalOpen(true);
+                      }}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        const updatedElements = slides[currentSlideIndex].elements.filter((_, i) => i !== index);
+                        const updatedSlides = slides.map((slide, slideIndex) =>
+                          slideIndex === currentSlideIndex ? { ...slide, elements: updatedElements } : slide
+                        );
+                        setSlides(updatedSlides);
+                      }}
+                    >
+                      <iframe src={element.source} width="100%" height="auto" autoPlay={element.autoPlay} />
+                    </VideoWrapper>
+                  );
+                } else if (element.type === 'code') {
+                  let languageIcon;
+                  let languageName;

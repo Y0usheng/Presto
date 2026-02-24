@@ -10,6 +10,7 @@ import python from 'react-syntax-highlighter/dist/esm/languages/hljs/python';
 import c from 'react-syntax-highlighter/dist/esm/languages/hljs/c';
 import { SiJavascript, SiPython, SiC } from 'react-icons/si';
 import { api } from '../utils/api';
+import TextModal from './TextModal';
 
 SyntaxHighlighter.registerLanguage('javascript', javascript);
 SyntaxHighlighter.registerLanguage('python', python);
@@ -158,15 +159,16 @@ function PresentationPage() {
   const [presentation, setPresentation] = useState(null);
 
 
-  const [addTextModalOpen, setAddTextModalOpen] = useState(false);
-  const [editTextModalOpen, setEditTextModalOpen] = useState(false);
+  // const [addTextModalOpen, setAddTextModalOpen] = useState(false);
+  // const [editTextModalOpen, setEditTextModalOpen] = useState(false);
 
-  const [textContent, setTextContent] = useState('');
-  const [textSize, setTextSize] = useState(50);
-  const [fontSize, setFontSize] = useState(1);
-  const [textColor, setTextColor] = useState('#000000');
-  const [fontFamily, setFontFamily] = useState('Arial');
-  const [textPosition, setTextPosition] = useState({ x: 0, y: 0 });
+  // const [textContent, setTextContent] = useState('');
+  // const [textSize, setTextSize] = useState(50);
+  // const [fontSize, setFontSize] = useState(1);
+  // const [textColor, setTextColor] = useState('#000000');
+  // const [fontFamily, setFontFamily] = useState('Arial');
+  // const [textPosition, setTextPosition] = useState({ x: 0, y: 0 });
+  const [textModalConfig, setTextModalConfig] = useState({ isOpen: false, initialData: null, editIndex: null });
   const [editElementIndex, setEditElementIndex] = useState(null);
 
   const [addImageModalOpen, setAddImageModalOpen] = useState(false);
@@ -353,69 +355,6 @@ function PresentationPage() {
     setAddTextModalOpen(true);
   };
 
-  const handleAddText = async () => {
-    if (textContent.trim() === '') return;
-
-    const updatedSlides = slides.map((slide, index) =>
-      index === currentSlideIndex
-        ? {
-          ...slide,
-          elements: [
-            ...(slide.elements || []),
-            {
-              type: 'text',
-              size: textSize,
-              text: textContent,
-              fontSize: fontSize,
-              color: textColor,
-              position: textPosition,
-              fontFamily: fontFamily,
-              layer: (slide.elements || []).length,
-            },
-          ],
-        }
-        : slide
-    );
-
-    setSlides(updatedSlides);
-    setAddTextModalOpen(false);
-    resetTextFormFields();
-
-    await updateStoreWithSlides(updatedSlides);
-  };
-
-  const handleEditText = async () => {
-    if (textContent.trim() === '' || editElementIndex === null) return;
-
-    const updatedSlides = slides.map((slide, index) =>
-      index === currentSlideIndex
-        ? {
-          ...slide,
-          elements: slide.elements.map((el, idx) =>
-            idx === editElementIndex
-              ? {
-                ...el,
-                text: textContent,
-                size: textSize,
-                fontSize: fontSize,
-                color: textColor,
-                fontFamily: fontFamily,
-                position: textPosition,
-              }
-              : el
-          ),
-        }
-        : slide
-    );
-
-    setSlides(updatedSlides);
-    setEditTextModalOpen(false);
-    setEditElementIndex(null);
-    resetTextFormFields();
-
-    await updateStoreWithSlides(updatedSlides);
-  };
-
   const updateStoreWithSlides = async (updatedSlides) => {
     try {
       const data = await api.getStore();
@@ -429,13 +368,25 @@ function PresentationPage() {
     }
   };
 
-  const resetTextFormFields = () => {
-    setTextContent('');
-    setTextSize(50);
-    setFontSize(1);
-    setTextColor('#000000');
-    setFontFamily('Arial');
-    setTextPosition({ x: 0, y: 0 });
+  const handleSaveTextElement = async (textElementData) => {
+    const isEditing = textModalConfig.editIndex !== null;
+
+    const updatedSlides = slides.map((slide, index) => {
+      if (index !== currentSlideIndex) return slide;
+
+      const newElements = [...(slide.elements || [])];
+      if (isEditing) {
+        // 修改现有元素
+        newElements[textModalConfig.editIndex] = { ...newElements[textModalConfig.editIndex], ...textElementData };
+      } else {
+        // 添加新元素，加上 layer 属性
+        newElements.push({ ...textElementData, layer: newElements.length });
+      }
+      return { ...slide, elements: newElements };
+    });
+
+    setSlides(updatedSlides);
+    await updateStoreWithSlides(updatedSlides);
   };
 
   // 2.3.2. Putting an IMAGE on the slide
@@ -693,7 +644,7 @@ function PresentationPage() {
       <Button variant="outlined" color="error" onClick={handleDeleteSlide} style={{ marginLeft: '10px' }}>Delete Slide</Button>
 
       <AddIn>Add in Slide:</AddIn>
-      <Button variant="outlined" onClick={handleAddTextElement} style={{ marginLeft: '10px' }}>Add Text Element</Button>
+      <Button variant="outlined" onClick={() => setTextModalConfig({ isOpen: true, initialData: null, editIndex: null })} style={{ marginLeft: '10px' }}>Add Text Element</Button>
       <Button variant="outlined" onClick={() => setAddImageModalOpen(true)} style={{ marginLeft: '10px' }}>Add Image</Button>
       <Button variant="outlined" onClick={() => setAddVideoModalOpen(true)} style={{ marginLeft: '10px' }}>Add Video</Button>
       <Button variant="outlined" onClick={handleAddCodeElement} style={{ marginLeft: '10px' }}>Add Code Block</Button>
@@ -746,14 +697,11 @@ function PresentationPage() {
                         alignItems: 'flex-start',
                       }}
                       onDoubleClick={() => {
-                        setTextContent(element.text);
-                        setTextSize(element.size);
-                        setFontSize(element.fontSize);
-                        setTextColor(element.color);
-                        setFontFamily(element.fontFamily);
-                        setTextPosition(element.position);
-                        setEditElementIndex(index);
-                        setEditTextModalOpen(true);
+                        setTextModalConfig({
+                          isOpen: true,
+                          initialData: element,
+                          editIndex: index
+                        });
                       }}
                       onContextMenu={(e) => {
                         e.preventDefault();
@@ -943,56 +891,12 @@ function PresentationPage() {
         </Box>
       </Modal>
 
-      {/* Model for 2.3.1. Putting TEXT on the slide */}
-      <Modal open={addTextModalOpen} onClose={() => setAddTextModalOpen(false)}>
-        <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', boxShadow: 24, p: 4 }}>
-          <Typography variant="h6" gutterBottom>Add Text Element</Typography>
-          <TextField fullWidth label="Text Content" value={textContent} onChange={(e) => setTextContent(e.target.value)} margin="normal" />
-          <TextField fullWidth label="Size (%)" type="number" value={textSize} onChange={(e) => setTextSize(e.target.value)} margin="normal" />
-          <TextField fullWidth label="Font Size (em)" type="number" value={fontSize} onChange={(e) => setFontSize(e.target.value)} margin="normal" />
-          <TextField fullWidth label="Text Color" type="text" value={textColor} onChange={(e) => setTextColor(e.target.value)} margin="normal" />
-          <InputLabel id="font-family-label">Font Family</InputLabel>
-          <Select
-            labelId="font-family-label"
-            value={fontFamily}
-            onChange={(e) => setFontFamily(e.target.value)}
-            fullWidth
-            margin="normal"
-          >
-            <MenuItem value="Arial">Arial</MenuItem>
-            <MenuItem value="Times New Roman">Times New Roman</MenuItem>
-            <MenuItem value="Courier New">Courier New</MenuItem>
-          </Select>
-          <TextField fullWidth label="Position X (%)" type="number" value={textPosition.x} onChange={(e) => setTextPosition({ ...textPosition, x: e.target.value })} margin="normal" />
-          <TextField fullWidth label="Position Y (%)" type="number" value={textPosition.y} onChange={(e) => setTextPosition({ ...textPosition, y: e.target.value })} margin="normal" />
-          <Button variant="contained" onClick={handleAddText} style={{ marginTop: '20px' }}>Add Text</Button>
-        </Box>
-      </Modal>
-
-      <Modal open={editTextModalOpen} onClose={() => setEditTextModalOpen(false)}>
-        <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', boxShadow: 24, p: 4 }}>
-          <Typography variant="h6" gutterBottom>Edit Text Element</Typography>
-          <TextField fullWidth label="Text Content" value={textContent} onChange={(e) => setTextContent(e.target.value)} margin="normal" />
-          <TextField fullWidth label="Size (%)" type="number" value={textSize} onChange={(e) => setTextSize(e.target.value)} margin="normal" />
-          <TextField fullWidth label="Font Size (em)" type="number" value={fontSize} onChange={(e) => setFontSize(e.target.value)} margin="normal" />
-          <TextField fullWidth label="Text Color" type="text" value={textColor} onChange={(e) => setTextColor(e.target.value)} margin="normal" />
-          <InputLabel id="font-family-label">Font Family</InputLabel>
-          <Select
-            labelId="font-family-label"
-            value={fontFamily}
-            onChange={(e) => setFontFamily(e.target.value)}
-            fullWidth
-            margin="normal"
-          >
-            <MenuItem value="Arial">Arial</MenuItem>
-            <MenuItem value="Times New Roman">Times New Roman</MenuItem>
-            <MenuItem value="Courier New">Courier New</MenuItem>
-          </Select>
-          <TextField fullWidth label="Position X (%)" type="number" value={textPosition.x} onChange={(e) => setTextPosition({ ...textPosition, x: e.target.value })} margin="normal" />
-          <TextField fullWidth label="Position Y (%)" type="number" value={textPosition.y} onChange={(e) => setTextPosition({ ...textPosition, y: e.target.value })} margin="normal" />
-          <Button variant="contained" onClick={handleEditText} style={{ marginTop: '20px' }}>Save Changes</Button>
-        </Box>
-      </Modal>
+      <TextModal
+        open={textModalConfig.isOpen}
+        onClose={() => setTextModalConfig({ ...textModalConfig, isOpen: false })}
+        onSave={handleSaveTextElement}
+        initialData={textModalConfig.initialData}
+      />
 
       {/* Model for 2.3.2. Putting an IMAGE on the slide */}
       <Modal open={addImageModalOpen} onClose={() => setAddImageModalOpen(false)}>

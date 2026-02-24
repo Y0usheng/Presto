@@ -13,6 +13,7 @@ import { api } from '../utils/api';
 import TextModal from './TextModal';
 import ImageModal from './ImageModal';
 import VideoModal from './VideoModal';
+import CodeModal from './CodeModal';
 
 SyntaxHighlighter.registerLanguage('javascript', javascript);
 SyntaxHighlighter.registerLanguage('python', python);
@@ -168,10 +169,7 @@ function PresentationPage() {
 
   const [videoModalConfig, setVideoModalConfig] = useState({ isOpen: false, initialData: null, editIndex: null });
 
-  const [addCodeModalOpen, setAddCodeModalOpen] = useState(false);
-  const [codeContent, setCodeContent] = useState('');
-  const [codeLanguage, setCodeLanguage] = useState('javascript');
-  const [codeFontSize, setCodeFontSize] = useState(1);
+  const [codeModalConfig, setCodeModalConfig] = useState({ isOpen: false, initialData: null, editIndex: null });
 
   const [backgroundModalOpen, setBackgroundModalOpen] = useState(false);
   const [backgroundType, setBackgroundType] = useState('solid');
@@ -414,53 +412,23 @@ function PresentationPage() {
   };
 
   // 2.3.4. Putting CODE on the slide
-  const handleAddCodeElement = () => {
-    setAddCodeModalOpen(true);
-  };
+  const handleSaveCodeElement = async (codeElementData) => {
+    const isEditing = codeModalConfig.editIndex !== null;
 
-  const handleAddCode = async () => {
-    if (codeContent.trim() === '') return;
+    const updatedSlides = slides.map((slide, index) => {
+      if (index !== currentSlideIndex) return slide;
 
-    const updatedSlides = slides.map((slide, index) =>
-      index === currentSlideIndex
-        ? {
-          ...slide,
-          elements: [
-            ...(slide.elements || []),
-            {
-              type: 'code',
-              language: codeLanguage,
-              code: codeContent,
-              fontSize: codeFontSize,
-              position: { x: 0, y: 0 },
-              layer: (slide.elements || []).length,
-            },
-          ],
-        }
-        : slide
-    );
+      const newElements = [...(slide.elements || [])];
+      if (isEditing) {
+        newElements[codeModalConfig.editIndex] = { ...newElements[codeModalConfig.editIndex], ...codeElementData };
+      } else {
+        newElements.push({ ...codeElementData, layer: newElements.length });
+      }
+      return { ...slide, elements: newElements };
+    });
 
     setSlides(updatedSlides);
-    setAddCodeModalOpen(false);
-    setCodeContent('');
-    setCodeLanguage('javascript');
-    setCodeFontSize(1);
-
-    try {
-      const data = await api.getStore();
-      const updatedStore = data.store.map((p) =>
-        p.id === parseInt(id)
-          ? { ...p, slides: updatedSlides }
-          : p
-      );
-
-      const updateResponse = await api.updateStore(updatedStore);
-      if (!updateResponse.ok) {
-        console.error('Failed to update presentation');
-      }
-    } catch (error) {
-      console.error('Error adding code:', error);
-    }
+    await updateStoreWithSlides(updatedSlides);
   };
 
   // 2.4.2. Theme and background picker
@@ -538,7 +506,8 @@ function PresentationPage() {
       <AddIn>Add in Slide:</AddIn>
       <Button variant="outlined" onClick={() => setTextModalConfig({ isOpen: true, initialData: null, editIndex: null })} style={{ marginLeft: '10px' }}>Add Text Element</Button>
       <Button variant="outlined" onClick={() => setImageModalConfig({ isOpen: true, initialData: null, editIndex: null })} style={{ marginLeft: '10px' }}>Add Image</Button>
-      <Button variant="outlined" onClick={() => setVideoModalConfig({ isOpen: true, initialData: null, editIndex: null })} style={{ marginLeft: '10px' }}>Add Video</Button>      <Button variant="outlined" onClick={handleAddCodeElement} style={{ marginLeft: '10px' }}>Add Code Block</Button>
+      <Button variant="outlined" onClick={() => setVideoModalConfig({ isOpen: true, initialData: null, editIndex: null })} style={{ marginLeft: '10px' }}>Add Video</Button>
+      <Button variant="outlined" onClick={() => setCodeModalConfig({ isOpen: true, initialData: null, editIndex: null })} style={{ marginLeft: '10px' }}>Add Code Block</Button>
       <Button variant="outlined" onClick={() => setBackgroundModalOpen(true)} style={{ marginLeft: '10px' }}>Change Background</Button>
       <Button variant="outlined" onClick={() => window.open(`/preview/${id}`, '_blank')} style={{ marginLeft: '10px' }}> Preview</Button>
 
@@ -718,10 +687,11 @@ function PresentationPage() {
                         alignItems: 'flex-start',
                       }}
                       onDoubleClick={() => {
-                        setCodeContent(element.code);
-                        setCodeLanguage(element.language);
-                        setCodeFontSize(element.fontSize);
-                        setAddCodeModalOpen(true);
+                        setCodeModalConfig({
+                          isOpen: true,
+                          initialData: element,
+                          editIndex: index
+                        });
                       }}
                       onContextMenu={(e) => {
                         e.preventDefault();
@@ -806,22 +776,12 @@ function PresentationPage() {
       />
 
       {/* Model for 2.3.4. Putting CODE on the slide */}
-      <Modal open={addCodeModalOpen} onClose={() => setAddCodeModalOpen(false)}>
-        <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 500, bgcolor: 'background.paper', boxShadow: 24, p: 4, }}>
-          <Typography variant="h6" gutterBottom>
-            Add Code Block
-          </Typography>
-          <InputLabel id="language-label">Language</InputLabel>
-          <Select labelId="language-label" value={codeLanguage} onChange={(e) => setCodeLanguage(e.target.value)} fullWidth margin="dense" >
-            <MenuItem value="javascript">JavaScript</MenuItem>
-            <MenuItem value="python">Python</MenuItem>
-            <MenuItem value="c">C</MenuItem>
-          </Select>
-          <TextField fullWidth label="Code Content" value={codeContent} onChange={(e) => setCodeContent(e.target.value)} margin="dense" multiline rows={6} />
-          <TextField fullWidth label="Font Size (em)" type="number" value={codeFontSize} onChange={(e) => setCodeFontSize(e.target.value)} margin="dense" />
-          <Button variant="contained" onClick={handleAddCode} style={{ marginTop: '20px' }}> Add Code</Button>
-        </Box>
-      </Modal>
+      <CodeModal
+        open={codeModalConfig.isOpen}
+        onClose={() => setCodeModalConfig({ ...codeModalConfig, isOpen: false })}
+        onSave={handleSaveCodeElement}
+        initialData={codeModalConfig.initialData}
+      />
 
       {/* Model for 2.4.2. Theme and background picker */}
       <Modal open={backgroundModalOpen} onClose={() => setBackgroundModalOpen(false)}>

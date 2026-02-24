@@ -11,6 +11,7 @@ import c from 'react-syntax-highlighter/dist/esm/languages/hljs/c';
 import { SiJavascript, SiPython, SiC } from 'react-icons/si';
 import { api } from '../utils/api';
 import TextModal from './TextModal';
+import ImageModal from './ImageModal';
 
 SyntaxHighlighter.registerLanguage('javascript', javascript);
 SyntaxHighlighter.registerLanguage('python', python);
@@ -158,25 +159,10 @@ function PresentationPage() {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(parseInt(slideNumber) - 1 || 0);
   const [presentation, setPresentation] = useState(null);
 
-
-  // const [addTextModalOpen, setAddTextModalOpen] = useState(false);
-  // const [editTextModalOpen, setEditTextModalOpen] = useState(false);
-
-  // const [textContent, setTextContent] = useState('');
-  // const [textSize, setTextSize] = useState(50);
-  // const [fontSize, setFontSize] = useState(1);
-  // const [textColor, setTextColor] = useState('#000000');
-  // const [fontFamily, setFontFamily] = useState('Arial');
-  // const [textPosition, setTextPosition] = useState({ x: 0, y: 0 });
   const [textModalConfig, setTextModalConfig] = useState({ isOpen: false, initialData: null, editIndex: null });
   const [editElementIndex, setEditElementIndex] = useState(null);
 
-  const [addImageModalOpen, setAddImageModalOpen] = useState(false);
-  const [editImageModalOpen, setEditImageModalOpen] = useState(false);
-  const [imageSource, setImageSource] = useState('');
-  const [imageSize, setImageSize] = useState(50);
-  const [altText, setAltText] = useState('');
-  const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
+  const [imageModalConfig, setImageModalConfig] = useState({ isOpen: false, initialData: null, editIndex: null });
 
   const [addVideoModalOpen, setAddVideoModalOpen] = useState(false);
   const [editVideoModalOpen, setEditVideoModalOpen] = useState(false);
@@ -390,70 +376,23 @@ function PresentationPage() {
   };
 
   // 2.3.2. Putting an IMAGE on the slide
-  const handleAddImage = async () => {
-    if (!imageSource.trim()) return;
+  const handleSaveImageElement = async (imageElementData) => {
+    const isEditing = imageModalConfig.editIndex !== null;
 
-    const updatedSlides = slides.map((slide, index) =>
-      index === currentSlideIndex
-        ? {
-          ...slide,
-          elements: [
-            ...(slide.elements || []),
-            {
-              type: 'image',
-              size: imageSize,
-              source: imageSource,
-              alt: altText,
-              position: imagePosition,
-              layer: (slide.elements || []).length,
-            },
-          ],
-        }
-        : slide
-    );
+    const updatedSlides = slides.map((slide, index) => {
+      if (index !== currentSlideIndex) return slide;
+
+      const newElements = [...(slide.elements || [])];
+      if (isEditing) {
+        newElements[imageModalConfig.editIndex] = { ...newElements[imageModalConfig.editIndex], ...imageElementData };
+      } else {
+        newElements.push({ ...imageElementData, layer: newElements.length });
+      }
+      return { ...slide, elements: newElements };
+    });
 
     setSlides(updatedSlides);
-    setAddImageModalOpen(false);
-    resetImageFormFields();
-
     await updateStoreWithSlides(updatedSlides);
-  };
-
-  const handleEditImage = async () => {
-    if (!imageSource.trim() || editElementIndex === null) return;
-
-    const updatedSlides = slides.map((slide, index) =>
-      index === currentSlideIndex
-        ? {
-          ...slide,
-          elements: slide.elements.map((el, idx) =>
-            idx === editElementIndex
-              ? {
-                ...el,
-                source: imageSource,
-                size: imageSize,
-                alt: altText,
-                position: imagePosition,
-              }
-              : el
-          ),
-        }
-        : slide
-    );
-
-    setSlides(updatedSlides);
-    setEditImageModalOpen(false);
-    setEditElementIndex(null);
-    resetImageFormFields();
-
-    await updateStoreWithSlides(updatedSlides);
-  };
-
-  const resetImageFormFields = () => {
-    setImageSource('');
-    setImageSize(50);
-    setAltText('');
-    setImagePosition({ x: 0, y: 0 });
   };
 
   // 2.3.3. Putting a VIDEO on the slide
@@ -645,7 +584,7 @@ function PresentationPage() {
 
       <AddIn>Add in Slide:</AddIn>
       <Button variant="outlined" onClick={() => setTextModalConfig({ isOpen: true, initialData: null, editIndex: null })} style={{ marginLeft: '10px' }}>Add Text Element</Button>
-      <Button variant="outlined" onClick={() => setAddImageModalOpen(true)} style={{ marginLeft: '10px' }}>Add Image</Button>
+      <Button variant="outlined" onClick={() => setImageModalConfig({ isOpen: true, initialData: null, editIndex: null })} style={{ marginLeft: '10px' }}>Add Image</Button>
       <Button variant="outlined" onClick={() => setAddVideoModalOpen(true)} style={{ marginLeft: '10px' }}>Add Video</Button>
       <Button variant="outlined" onClick={handleAddCodeElement} style={{ marginLeft: '10px' }}>Add Code Block</Button>
       <Button variant="outlined" onClick={() => setBackgroundModalOpen(true)} style={{ marginLeft: '10px' }}>Change Background</Button>
@@ -736,12 +675,11 @@ function PresentationPage() {
                         border: '1px solid grey',
                       }}
                       onDoubleClick={() => {
-                        setImageSource(element.source);
-                        setImageSize(element.size);
-                        setAltText(element.alt);
-                        setImagePosition(element.position);
-                        setEditElementIndex(index);
-                        setEditImageModalOpen(true);
+                        setImageModalConfig({
+                          isOpen: true,
+                          initialData: element,
+                          editIndex: index
+                        });
                       }}
                       onContextMenu={(e) => {
                         e.preventDefault();
@@ -891,6 +829,7 @@ function PresentationPage() {
         </Box>
       </Modal>
 
+      {/* Model for 2.3.1. Putting an Text on the slide */}
       <TextModal
         open={textModalConfig.isOpen}
         onClose={() => setTextModalConfig({ ...textModalConfig, isOpen: false })}
@@ -899,49 +838,12 @@ function PresentationPage() {
       />
 
       {/* Model for 2.3.2. Putting an IMAGE on the slide */}
-      <Modal open={addImageModalOpen} onClose={() => setAddImageModalOpen(false)}>
-        <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', boxShadow: 24, p: 4 }}>
-          <Typography variant="h6" gutterBottom>Add Image</Typography>
-          <TextField fullWidth label="Image URL" value={imageSource} onChange={(e) => setImageSource(e.target.value)} margin="normal" />
-          <input type="file" onChange={(e) => {
-            const file = e.target.files[0];
-            if (file) {
-              const reader = new FileReader();
-              reader.onloadend = () => {
-                setImageSource(reader.result);
-              };
-              reader.readAsDataURL(file);
-            }
-          }} />
-          <TextField fullWidth label="Size (%)" type="number" value={imageSize} onChange={(e) => setImageSize(e.target.value)} margin="normal" />
-          <TextField fullWidth label="Alt Text" value={altText} onChange={(e) => setAltText(e.target.value)} margin="normal" />
-          <TextField fullWidth label="Position X (%)" type="number" value={imagePosition.x} onChange={(e) => setImagePosition({ ...imagePosition, x: e.target.value })} margin="normal" />
-          <TextField fullWidth label="Position Y (%)" type="number" value={imagePosition.y} onChange={(e) => setImagePosition({ ...imagePosition, y: e.target.value })} margin="normal" />
-          <Button variant="contained" onClick={handleAddImage} style={{ marginTop: '20px' }}>Add Image</Button>
-        </Box>
-      </Modal>
-
-      <Modal open={editImageModalOpen} onClose={() => setEditImageModalOpen(false)}>
-        <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', boxShadow: 24, p: 4 }}>
-          <Typography variant="h6" gutterBottom>Edit Image</Typography>
-          <TextField fullWidth label="Image URL" value={imageSource} onChange={(e) => setImageSource(e.target.value)} margin="normal" />
-          <input type="file" onChange={(e) => {
-            const file = e.target.files[0];
-            if (file) {
-              const reader = new FileReader();
-              reader.onloadend = () => {
-                setImageSource(reader.result);
-              };
-              reader.readAsDataURL(file);
-            }
-          }} />
-          <TextField fullWidth label="Size (%)" type="number" value={imageSize} onChange={(e) => setImageSize(e.target.value)} margin="normal" />
-          <TextField fullWidth label="Alt Text" value={altText} onChange={(e) => setAltText(e.target.value)} margin="normal" />
-          <TextField fullWidth label="Position X (%)" type="number" value={imagePosition.x} onChange={(e) => setImagePosition({ ...imagePosition, x: e.target.value })} margin="normal" />
-          <TextField fullWidth label="Position Y (%)" type="number" value={imagePosition.y} onChange={(e) => setImagePosition({ ...imagePosition, y: e.target.value })} margin="normal" />
-          <Button variant="contained" onClick={handleEditImage} style={{ marginTop: '20px' }}>Save Changes</Button>
-        </Box>
-      </Modal>
+      <ImageModal
+        open={imageModalConfig.isOpen}
+        onClose={() => setImageModalConfig({ ...imageModalConfig, isOpen: false })}
+        onSave={handleSaveImageElement}
+        initialData={imageModalConfig.initialData}
+      />
 
       {/* Model for 2.3.3. Putting a VIDEO on the slide */}
       <Modal open={addVideoModalOpen} onClose={() => setAddVideoModalOpen(false)}>

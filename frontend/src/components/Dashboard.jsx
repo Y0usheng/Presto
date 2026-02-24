@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import 'w3-css/w3.css';
 import { Card, CardContent, Typography } from '@mui/material';
+import { api } from '../utils/api';
 
 const DashboardWrapper = styled.div`
   padding: 20px;
@@ -171,17 +172,8 @@ function Dashboard() {
   useEffect(() => {
     const fetchPresentations = async () => {
       try {
-        const response = await fetch('http://localhost:5005/store', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setPresentations(data.store || []);
-        }
+        const data = await api.getStore();
+        setPresentations(data.store || []);
       } catch (error) {
         console.error('Error fetching presentations:', error);
       }
@@ -201,21 +193,9 @@ function Dashboard() {
         slidesCount: 1,
       }];
 
-      const response = await fetch('http://localhost:5005/store', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({ store: updatedPresentations }),
-      });
-
-      if (response.ok) {
-        setPresentations(updatedPresentations);
-        document.getElementById('newPresentationModal').style.display = 'none';
-      } else {
-        console.error('Error creating presentation');
-      }
+      await api.updateStore(updatedPresentations);
+      setPresentations(updatedPresentations);
+      document.getElementById('newPresentationModal').style.display = 'none';
     } catch (error) {
       console.error('Error creating presentation:', error);
     }

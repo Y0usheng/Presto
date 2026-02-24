@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import { api } from '../utils/api';
 
 const StyleDiv = styled.div`
   display: flex;
@@ -149,34 +150,24 @@ function RegisterPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(null);
+
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
     }
 
-    const response = await fetch('http://localhost:5005/admin/auth/register', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        email,
-        name,
-        password
-      })
-    });
-    const data = await response.json();
-    if (response.ok) {
+    try {
+      const data = await api.register(email, name, password);
       localStorage.setItem('token', data.token);
       navigate('/dashboard');
-    } else {
-      setError(data.error || 'Registration failed');
+    } catch (err) {
+      setError(err.message || 'Registration failed');
     }
-
   };
 
   const handleBack = () => {
-    navigate('/'); // Adjust as needed based on your routing setup
+    navigate('/');
   };
 
   return (

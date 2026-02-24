@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { Button, Typography } from '@mui/material';
+import { api } from '../utils/api';
 
 const FullScreenSlide = styled.div`
     width: 100vw;
@@ -29,24 +30,13 @@ function PreviewPage() {
   useEffect(() => {
     const fetchPresentation = async () => {
       try {
-        const response = await fetch(`http://localhost:5005/store`, {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-        });
+        const data = await api.getStore();
+        const foundPresentation = data.store.find(p => p.id === parseInt(id));
 
-        if (response.ok) {
-          const data = await response.json();
-          const foundPresentation = data.store.find(p => p.id === parseInt(id));
-
-          if (foundPresentation) {
-            setSlides(foundPresentation.slides || []);
-          } else {
-            console.error('Presentation not found');
-          }
+        if (foundPresentation) {
+          setSlides(foundPresentation.slides || []);
         } else {
-          console.error('Failed to fetch user data');
+          console.error('Presentation not found');
         }
       } catch (error) {
         console.error('Error fetching presentation:', error);
@@ -165,14 +155,14 @@ function PreviewPage() {
           disabled={currentSlideIndex === 0}
           onClick={() => handleSlideNavigation('prev')}
         >
-                    Previous
+          Previous
         </Button>
         <Typography>Slide {currentSlideIndex + 1} of {slides.length}</Typography>
         <Button
           disabled={currentSlideIndex === slides.length - 1}
           onClick={() => handleSlideNavigation('next')}
         >
-                    Next
+          Next
         </Button>
       </div>
     </FullScreenSlide>

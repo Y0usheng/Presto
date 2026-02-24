@@ -9,6 +9,7 @@ import javascript from 'react-syntax-highlighter/dist/esm/languages/hljs/javascr
 import python from 'react-syntax-highlighter/dist/esm/languages/hljs/python';
 import c from 'react-syntax-highlighter/dist/esm/languages/hljs/c';
 import { SiJavascript, SiPython, SiC } from 'react-icons/si';
+import { api } from '../utils/api';
 
 SyntaxHighlighter.registerLanguage('javascript', javascript);
 SyntaxHighlighter.registerLanguage('python', python);
@@ -197,39 +198,15 @@ function PresentationPage() {
   const handleDelete = async () => {
     if (window.confirm('Are you sure?')) {
       try {
-        const response = await fetch(`http://localhost:5005/store`, {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-        });
+        const data = await api.getStore();
+        let updatedStore = data.store.filter(p => p.id !== parseInt(id));
+        updatedStore = updatedStore.map((presentation, index) => ({
+          ...presentation,
+          id: index + 1,
+        }));
 
-        if (response.ok) {
-          const data = await response.json();
-          let updatedStore = data.store.filter(p => p.id !== parseInt(id));
-
-          updatedStore = updatedStore.map((presentation, index) => ({
-            ...presentation,
-            id: index + 1,
-          }));
-
-          const updateResponse = await fetch(`http://localhost:5005/store`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-            body: JSON.stringify({ ...data, store: updatedStore }),
-          });
-
-          if (updateResponse.ok) {
-            navigate('/dashboard');
-          } else {
-            console.error('Failed to delete presentation');
-          }
-        } else {
-          console.error('Failed to fetch user data');
-        }
+        await api.updateStore(updatedStore);
+        navigate('/dashboard');
       } catch (error) {
         console.error('Error deleting presentation:', error);
       }
@@ -240,26 +217,14 @@ function PresentationPage() {
   useEffect(() => {
     const fetchPresentation = async () => {
       try {
-        const response = await fetch(`http://localhost:5005/store`, {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const foundPresentation = data.store.find(p => p.id === parseInt(id));
-
-          if (foundPresentation) {
-            setPresentation(foundPresentation);
-            setNewTitle(foundPresentation.name);
-            setSlides(foundPresentation.slides || []);
-          } else {
-            console.error('Presentation not found');
-          }
+        const data = await api.getStore();
+        const foundPresentation = data.store.find(p => p.id === parseInt(id));
+        if (foundPresentation) {
+          setPresentation(foundPresentation);
+          setNewTitle(foundPresentation.name);
+          setSlides(foundPresentation.slides || []);
         } else {
-          console.error('Failed to fetch user data');
+          console.error('Presentation not found');
         }
       } catch (error) {
         console.error('Error fetching presentation:', error);
@@ -283,29 +248,14 @@ function PresentationPage() {
   // 2.2.4. Title editing
   const handleTitleEdit = async () => {
     try {
-      const response = await fetch(`http://localhost:5005/store`, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        const updatedStore = data.store.map((p) =>
-          p.id === parseInt(id) ? { ...p, name: newTitle } : p
-        );
-        const updateResponse = await fetch(`http://localhost:5005/store`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-          body: JSON.stringify({ ...data, store: updatedStore }),
-        });
-        if (updateResponse.ok) {
-          setPresentation((prev) => ({ ...prev, name: newTitle }));
-          setEditTitleOpen(false);
-        }
+      const data = await api.getStore();
+      const updatedStore = data.store.map((p) =>
+        p.id === parseInt(id) ? { ...p, name: newTitle } : p
+      );
+      const updateResponse = await api.updateStore(updatedStore);
+      if (updateResponse.ok) {
+        setPresentation((prev) => ({ ...prev, name: newTitle }));
+        setEditTitleOpen(false);
       }
     } catch (error) {
       console.error('Error updating title:', error);
@@ -321,30 +271,15 @@ function PresentationPage() {
         const base64String = reader.result;
         if (window.confirm('Are you sure you want to change the thumbnail?')) {
           try {
-            const response = await fetch(`http://localhost:5005/store`, {
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${localStorage.getItem('token')}`,
-              },
-            });
-            if (response.ok) {
-              const data = await response.json();
-              const updatedStore = data.store.map((p) =>
-                p.id === parseInt(id) ? { ...p, thumbnail: base64String } : p
-              );
-              const updateResponse = await fetch(`http://localhost:5005/store`, {
-                method: 'PUT',
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${localStorage.getItem('token')}`,
-                },
-                body: JSON.stringify({ ...data, store: updatedStore }),
-              });
-              if (updateResponse.ok) {
-                setPresentation((prev) => ({ ...prev, thumbnail: base64String }));
-                setNewThumbnail(base64String);
-                setThumbnailModalOpen(false);
-              }
+            const data = await api.getStore();
+            const updatedStore = data.store.map((p) =>
+              p.id === parseInt(id) ? { ...p, thumbnail: base64String } : p
+            );
+            const updateResponse = await api.updateStore(updatedStore);
+            if (updateResponse.ok) {
+              setPresentation((prev) => ({ ...prev, thumbnail: base64String }));
+              setNewThumbnail(base64String);
+              setThumbnailModalOpen(false);
             }
           } catch (error) {
             console.error('Error updating thumbnail:', error);
@@ -360,34 +295,15 @@ function PresentationPage() {
     try {
       const newSlides = [...slides, { page: `Slide ${slides.length + 1}` }];
       setSlides(newSlides);
-
       const updatedPresentation = { ...presentation, slides: newSlides, slidesCount: newSlides.length };
       setPresentation(updatedPresentation);
-
-      const response = await fetch(`http://localhost:5005/store`, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        const updatedStore = data.store.map((p) => (p.id === parseInt(id) ? updatedPresentation : p));
-
-        const updateResponse = await fetch(`http://localhost:5005/store`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-          body: JSON.stringify({ ...data, store: updatedStore }),
-        });
-
-        if (updateResponse.ok) {
-          setPresentation(updatedPresentation);
-        } else {
-          console.error('Failed to update presentation');
-        }
+      const data = await api.getStore();
+      const updatedStore = data.store.map((p) => (p.id === parseInt(id) ? updatedPresentation : p));
+      const updateResponse = await api.updateStore(updatedStore);
+      if (updateResponse.ok) {
+        setPresentation(updatedPresentation);
+      } else {
+        console.error('Failed to update presentation');
       }
     } catch (error) {
       console.error('Error adding slide:', error);
@@ -407,33 +323,16 @@ function PresentationPage() {
     const updatedPresentation = { ...presentation, slides: newSlides, slidesCount: newSlides.length };
 
     try {
-      const response = await fetch(`http://localhost:5005/store`, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        const updatedStore = data.store.map((p) => (p.id === parseInt(id) ? updatedPresentation : p));
-
-        const updateResponse = await fetch(`http://localhost:5005/store`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-          body: JSON.stringify({ ...data, store: updatedStore }),
-        });
-
-        if (updateResponse.ok) {
-          setPresentation(updatedPresentation);
-          if (currentSlideIndex > 0) {
-            setCurrentSlideIndex(currentSlideIndex - 1);
-          }
-        } else {
-          console.error('Failed to update presentation');
+      const data = await api.getStore();
+      const updatedStore = data.store.map((p) => (p.id === parseInt(id) ? updatedPresentation : p));
+      const updateResponse = await api.updateStore(updatedStore);
+      if (updateResponse.ok) {
+        setPresentation(updatedPresentation);
+        if (currentSlideIndex > 0) {
+          setCurrentSlideIndex(currentSlideIndex - 1);
         }
+      } else {
+        console.error('Failed to update presentation');
       }
     } catch (error) {
       console.error('Error deleting slide:', error);
@@ -519,28 +418,11 @@ function PresentationPage() {
 
   const updateStoreWithSlides = async (updatedSlides) => {
     try {
-      const response = await fetch(`http://localhost:5005/store`, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        const updatedStore = data.store.map((p) => p.id === parseInt(id) ? { ...p, slides: updatedSlides } : p);
-
-        const updateResponse = await fetch(`http://localhost:5005/store`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-          body: JSON.stringify({ ...data, store: updatedStore }),
-        });
-
-        if (!updateResponse.ok) {
-          console.error('Failed to update presentation');
-        }
+      const data = await api.getStore();
+      const updatedStore = data.store.map((p) => p.id === parseInt(id) ? { ...p, slides: updatedSlides } : p);
+      const updateResponse = await api.updateStore(updatedStore);
+      if (!updateResponse.ok) {
+        console.error('Failed to update presentation');
       }
     } catch (error) {
       console.error('Error updating presentation:', error);
@@ -722,32 +604,16 @@ function PresentationPage() {
     setCodeFontSize(1);
 
     try {
-      const response = await fetch(`http://localhost:5005/store`, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        const updatedStore = data.store.map((p) =>
-          p.id === parseInt(id)
-            ? { ...p, slides: updatedSlides }
-            : p
-        );
+      const data = await api.getStore();
+      const updatedStore = data.store.map((p) =>
+        p.id === parseInt(id)
+          ? { ...p, slides: updatedSlides }
+          : p
+      );
 
-        const updateResponse = await fetch(`http://localhost:5005/store`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-          body: JSON.stringify({ ...data, store: updatedStore }),
-        });
-
-        if (!updateResponse.ok) {
-          console.error('Failed to update presentation');
-        }
+      const updateResponse = await api.updateStore(updatedStore);
+      if (!updateResponse.ok) {
+        console.error('Failed to update presentation');
       }
     } catch (error) {
       console.error('Error adding code:', error);
@@ -978,21 +844,21 @@ function PresentationPage() {
                   let languageName;
 
                   switch (element.language) {
-                  case 'javascript':
-                    languageIcon = <SiJavascript color="#F0DB4F" size={24} />;
-                    languageName = "JavaScript";
-                    break;
-                  case 'python':
-                    languageIcon = <SiPython color="#306998" size={24} />;
-                    languageName = "Python";
-                    break;
-                  case 'c':
-                    languageIcon = <SiC color="#00599C" size={24} />;
-                    languageName = "C";
-                    break;
-                  default:
-                    languageName = element.language;
-                    break;
+                    case 'javascript':
+                      languageIcon = <SiJavascript color="#F0DB4F" size={24} />;
+                      languageName = "JavaScript";
+                      break;
+                    case 'python':
+                      languageIcon = <SiPython color="#306998" size={24} />;
+                      languageName = "Python";
+                      break;
+                    case 'c':
+                      languageIcon = <SiC color="#00599C" size={24} />;
+                      languageName = "C";
+                      break;
+                    default:
+                      languageName = element.language;
+                      break;
                   }
 
                   return (

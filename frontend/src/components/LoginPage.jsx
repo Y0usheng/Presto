@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import { api } from '../utils/api';
 
 const StyleDiv = styled.div`
   display: flex;
@@ -147,24 +148,15 @@ function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(null);
 
-    const response = await fetch('http://localhost:5005/admin/auth/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        email,
-        password,
-      })
-    });
-    const data = await response.json();
-    if (response.ok) {
-      localStorage.setItem('token', data.token)
-      console.log(data.token)
+    try {
+      const data = await api.login(email, password);
+      localStorage.setItem('token', data.token);
+      console.log(data.token);
       navigate('/dashboard');
-    } else {
-      setError(data.error || 'Invalid email or password');
+    } catch (err) {
+      setError(err.message || 'Invalid email or password');
     }
   };
 

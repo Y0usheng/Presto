@@ -12,6 +12,7 @@ import { SiJavascript, SiPython, SiC } from 'react-icons/si';
 import { api } from '../utils/api';
 import TextModal from './TextModal';
 import ImageModal from './ImageModal';
+import VideoModal from './VideoModal';
 
 SyntaxHighlighter.registerLanguage('javascript', javascript);
 SyntaxHighlighter.registerLanguage('python', python);
@@ -159,16 +160,13 @@ function PresentationPage() {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(parseInt(slideNumber) - 1 || 0);
   const [presentation, setPresentation] = useState(null);
 
-  const [textModalConfig, setTextModalConfig] = useState({ isOpen: false, initialData: null, editIndex: null });
   const [editElementIndex, setEditElementIndex] = useState(null);
+
+  const [textModalConfig, setTextModalConfig] = useState({ isOpen: false, initialData: null, editIndex: null });
 
   const [imageModalConfig, setImageModalConfig] = useState({ isOpen: false, initialData: null, editIndex: null });
 
-  const [addVideoModalOpen, setAddVideoModalOpen] = useState(false);
-  const [editVideoModalOpen, setEditVideoModalOpen] = useState(false);
-  const [videoSource, setVideoSource] = useState('');
-  const [videoSize, setVideoSize] = useState(50);
-  const [videoAutoPlay, setVideoAutoPlay] = useState(false);
+  const [videoModalConfig, setVideoModalConfig] = useState({ isOpen: false, initialData: null, editIndex: null });
 
   const [addCodeModalOpen, setAddCodeModalOpen] = useState(false);
   const [codeContent, setCodeContent] = useState('');
@@ -396,68 +394,23 @@ function PresentationPage() {
   };
 
   // 2.3.3. Putting a VIDEO on the slide
-  const handleAddVideo = async () => {
-    if (!videoSource.trim()) return;
+  const handleSaveVideoElement = async (videoElementData) => {
+    const isEditing = videoModalConfig.editIndex !== null;
 
-    const updatedSlides = slides.map((slide, index) =>
-      index === currentSlideIndex
-        ? {
-          ...slide,
-          elements: [
-            ...(slide.elements || []),
-            {
-              type: 'video',
-              size: videoSize,
-              source: videoSource,
-              autoPlay: videoAutoPlay,
-              position: { x: 0, y: 0 },
-              layer: (slide.elements || []).length,
-            },
-          ],
-        }
-        : slide
-    );
+    const updatedSlides = slides.map((slide, index) => {
+      if (index !== currentSlideIndex) return slide;
+
+      const newElements = [...(slide.elements || [])];
+      if (isEditing) {
+        newElements[videoModalConfig.editIndex] = { ...newElements[videoModalConfig.editIndex], ...videoElementData };
+      } else {
+        newElements.push({ ...videoElementData, layer: newElements.length });
+      }
+      return { ...slide, elements: newElements };
+    });
 
     setSlides(updatedSlides);
-    setAddVideoModalOpen(false);
-    resetVideoFormFields();
-
     await updateStoreWithSlides(updatedSlides);
-  };
-
-  const handleEditVideo = async () => {
-    if (!videoSource.trim() || editElementIndex === null) return;
-
-    const updatedSlides = slides.map((slide, index) =>
-      index === currentSlideIndex
-        ? {
-          ...slide,
-          elements: slide.elements.map((el, idx) =>
-            idx === editElementIndex
-              ? {
-                ...el,
-                source: videoSource,
-                size: videoSize,
-                autoPlay: videoAutoPlay,
-              }
-              : el
-          ),
-        }
-        : slide
-    );
-
-    setSlides(updatedSlides);
-    setEditVideoModalOpen(false);
-    setEditElementIndex(null);
-    resetVideoFormFields();
-
-    await updateStoreWithSlides(updatedSlides);
-  };
-
-  const resetVideoFormFields = () => {
-    setVideoSource('');
-    setVideoSize(50);
-    setVideoAutoPlay(false);
   };
 
   // 2.3.4. Putting CODE on the slide
@@ -585,8 +538,7 @@ function PresentationPage() {
       <AddIn>Add in Slide:</AddIn>
       <Button variant="outlined" onClick={() => setTextModalConfig({ isOpen: true, initialData: null, editIndex: null })} style={{ marginLeft: '10px' }}>Add Text Element</Button>
       <Button variant="outlined" onClick={() => setImageModalConfig({ isOpen: true, initialData: null, editIndex: null })} style={{ marginLeft: '10px' }}>Add Image</Button>
-      <Button variant="outlined" onClick={() => setAddVideoModalOpen(true)} style={{ marginLeft: '10px' }}>Add Video</Button>
-      <Button variant="outlined" onClick={handleAddCodeElement} style={{ marginLeft: '10px' }}>Add Code Block</Button>
+      <Button variant="outlined" onClick={() => setVideoModalConfig({ isOpen: true, initialData: null, editIndex: null })} style={{ marginLeft: '10px' }}>Add Video</Button>      <Button variant="outlined" onClick={handleAddCodeElement} style={{ marginLeft: '10px' }}>Add Code Block</Button>
       <Button variant="outlined" onClick={() => setBackgroundModalOpen(true)} style={{ marginLeft: '10px' }}>Change Background</Button>
       <Button variant="outlined" onClick={() => window.open(`/preview/${id}`, '_blank')} style={{ marginLeft: '10px' }}> Preview</Button>
 
@@ -703,11 +655,11 @@ function PresentationPage() {
                       size={element.size}
                       position={element.position}
                       onDoubleClick={() => {
-                        setVideoSource(element.source);
-                        setVideoSize(element.size);
-                        setVideoAutoPlay(element.autoPlay);
-                        setEditElementIndex(index);
-                        setEditVideoModalOpen(true);
+                        setVideoModalConfig({
+                          isOpen: true,
+                          initialData: element,
+                          editIndex: index
+                        });
                       }}
                       onContextMenu={(e) => {
                         e.preventDefault();
@@ -846,31 +798,12 @@ function PresentationPage() {
       />
 
       {/* Model for 2.3.3. Putting a VIDEO on the slide */}
-      <Modal open={addVideoModalOpen} onClose={() => setAddVideoModalOpen(false)}>
-        <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', boxShadow: 24, p: 4 }}>
-          <Typography variant="h6" gutterBottom>Add Video</Typography>
-          <TextField fullWidth label="Video URL" value={videoSource} onChange={(e) => setVideoSource(e.target.value)} margin="normal" />
-          <TextField fullWidth label="Size (%)" type="number" value={videoSize} onChange={(e) => setVideoSize(e.target.value)} margin="normal" />
-          <FormControlLabel
-            control={<Checkbox checked={videoAutoPlay} onChange={(e) => setVideoAutoPlay(e.target.checked)} />}
-            label="Auto-Play"
-          />
-          <Button variant="contained" onClick={handleAddVideo} style={{ marginTop: '20px' }}>Add Video</Button>
-        </Box>
-      </Modal>
-
-      <Modal open={editVideoModalOpen} onClose={() => setEditVideoModalOpen(false)}>
-        <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', boxShadow: 24, p: 4 }}>
-          <Typography variant="h6" gutterBottom>Edit Video</Typography>
-          <TextField fullWidth label="Video URL" value={videoSource} onChange={(e) => setVideoSource(e.target.value)} margin="normal" />
-          <TextField fullWidth label="Size (%)" type="number" value={videoSize} onChange={(e) => setVideoSize(e.target.value)} margin="normal" />
-          <FormControlLabel
-            control={<Checkbox checked={videoAutoPlay} onChange={(e) => setVideoAutoPlay(e.target.checked)} />}
-            label="Auto-Play"
-          />
-          <Button variant="contained" onClick={handleEditVideo} style={{ marginTop: '20px' }}>Save Changes</Button>
-        </Box>
-      </Modal>
+      <VideoModal
+        open={videoModalConfig.isOpen}
+        onClose={() => setVideoModalConfig({ ...videoModalConfig, isOpen: false })}
+        onSave={handleSaveVideoElement}
+        initialData={videoModalConfig.initialData}
+      />
 
       {/* Model for 2.3.4. Putting CODE on the slide */}
       <Modal open={addCodeModalOpen} onClose={() => setAddCodeModalOpen(false)}>

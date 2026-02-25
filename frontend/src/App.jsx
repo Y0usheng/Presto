@@ -1,11 +1,11 @@
 import { BrowserRouter as Router, Route, Routes, Navigate, useParams } from 'react-router-dom';
-import LandingPage from './components/LandingPage';
-import LoginPage from './components/LoginPage';
-import RegisterPage from './components/RegisterPage';
-import Dashboard from './components/Dashboard';
+import LandingPage from './pages/LandingPage/LandingPage';
+import LoginPage from './pages/Login/LoginPage';
+import RegisterPage from './pages/Register/RegisterPage';
+import Dashboard from './pages/Dashboard/Dashboard';
 import TokenCheckRouter from './components/CheckToken';
-import PresentationPage from './components/PresentationPage';
-import PreviewPage from './components/PreviewPage';
+import PresentationPage from './pages/Presentation/PresentationPage';
+import PreviewPage from './pages/PreviewPage/PreviewPage';
 
 const PresentationRedirectToFirstSlide = () => {
   const { id } = useParams();
@@ -34,4 +34,4 @@ function App() {
   )
 }
 
-export default App
+export default App;

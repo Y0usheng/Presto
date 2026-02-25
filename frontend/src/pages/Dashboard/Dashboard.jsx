@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import 'w3-css/w3.css';
 import { Card, CardContent, Typography } from '@mui/material';
-import { api } from '../utils/api';
+import { api } from '../../utils/api';
 
 const DashboardWrapper = styled.div`
   padding: 20px;

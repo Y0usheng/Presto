@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { Button, Typography } from '@mui/material';
-import { api } from '../utils/api';
+import { api } from '../../utils/api';
 
 const FullScreenSlide = styled.div`
     width: 100vw;

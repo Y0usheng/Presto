@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { api } from '../utils/api';
+import { api } from '../../utils/api';
 
 const StyleDiv = styled.div`
   display: flex;
@@ -31,6 +31,20 @@ const LeftSection = styled.div`
   }
 `;
 
+const RightSection = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding:20px;
+  background-color: #ffffff;
+
+  @media (max-width: 768px) {
+    height: 50vh;
+  }
+`;
+
 const TextBackground = styled.div`
   background-color: rgba(0, 0, 0, 0.5);
   padding: 10px;
@@ -41,7 +55,6 @@ const TextBackground = styled.div`
     width: 90%;
   }
 `;
-
 
 const Heading = styled.h1`
   font-size: 4rem;
@@ -70,20 +83,6 @@ const Text = styled.p`
   }
 `;
 
-const RightSection = styled.div`
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  background-color: #ffffff;
-
-  @media (max-width: 768px) {
-    height: 50vh;
-  }
-`;
-
 const H2 = styled.h2`
   font-size: 2.5rem;
   color: #333;
@@ -93,8 +92,8 @@ const H2 = styled.h2`
 const Input = styled.input`
   width: 85%;
   padding: 12px;
-  margin-bottom: 20px;
   margin-left: 30px;
+  margin-bottom: 20px;
   border: 1px solid #ccc;
   border-radius: 5px;
   font-size: 16px;
@@ -107,8 +106,8 @@ const Input = styled.input`
 const Button = styled.button`
   width: 40%;
   padding: 15px;
-  margin-top: 10px;
   margin-left: 30px;
+  margin-top: 10px;
   font-size: 18px;
   color: white;
   background-color: #4DB6AC;
@@ -140,11 +139,10 @@ const ErrorMessage = styled.p`
   margin-left:30px;
 `;
 
-function RegisterPage() {
+
+function LoginPage() {
   const [email, setEmail] = useState('');
-  const [name, setName] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
@@ -152,17 +150,13 @@ function RegisterPage() {
     e.preventDefault();
     setError(null);
 
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
     try {
-      const data = await api.register(email, name, password);
+      const data = await api.login(email, password);
       localStorage.setItem('token', data.token);
+      console.log(data.token);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message || 'Registration failed');
+      setError(err.message || 'Invalid email or password');
     }
   };
 
@@ -179,7 +173,7 @@ function RegisterPage() {
         </TextBackground>
       </LeftSection>
       <RightSection>
-        <H2>Register Form</H2>
+        <H2>Login Form</H2>
         <form onSubmit={handleSubmit}>
           <Input
             type="email"
@@ -189,33 +183,19 @@ function RegisterPage() {
             required
           />
           <Input
-            type="text"
-            placeholder="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-          <Input
             type="password"
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-          <Input
-            type="password"
-            placeholder="Confirm Password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-          />
           {error && <ErrorMessage>{error}</ErrorMessage>}
-          <Button type="submit">Register</Button>
-          <Button type="button" onClick={handleBack}>Back</Button>
+          <Button type="submit">Login</Button>
+          <Button onClick={handleBack} type="button">Back</Button>
         </form>
       </RightSection>
-    </StyleDiv>
+    </StyleDiv >
   );
 }
 
-export default RegisterPage;
+export default LoginPage;

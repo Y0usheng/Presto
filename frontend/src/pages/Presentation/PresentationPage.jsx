@@ -9,11 +9,11 @@ import javascript from 'react-syntax-highlighter/dist/esm/languages/hljs/javascr
 import python from 'react-syntax-highlighter/dist/esm/languages/hljs/python';
 import c from 'react-syntax-highlighter/dist/esm/languages/hljs/c';
 import { SiJavascript, SiPython, SiC } from 'react-icons/si';
-import { api } from '../utils/api';
-import TextModal from './TextModal';
-import ImageModal from './ImageModal';
-import VideoModal from './VideoModal';
-import CodeModal from './CodeModal';
+import { api } from '../../utils/api';
+import TextModal from './components/TextModal';
+import ImageModal from './components/ImageModal';
+import VideoModal from './components/VideoModal';
+import CodeModal from './components/CodeModal';
 
 SyntaxHighlighter.registerLanguage('javascript', javascript);
 SyntaxHighlighter.registerLanguage('python', python);

@@ -1,144 +1,11 @@
+// src/pages/Login/LoginPage.jsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
 import { api } from '../../utils/api';
-
-const StyleDiv = styled.div`
-  display: flex;
-  height: 100vh;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-  }
-`;
-
-const LeftSection = styled.div`
-  flex: 1.5;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background-color: #f0f0f0;
-  text-align: center;
-  background-image: url('https://images.pexels.com/photos/6476254/pexels-photo-6476254.jpeg?auto=compress&cs=tinysrgb&w=1200');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-
-  @media (max-width: 768px) {
-    flex: 1;
-    height: 50vh;
-  }
-`;
-
-const RightSection = styled.div`
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding:20px;
-  background-color: #ffffff;
-
-  @media (max-width: 768px) {
-    height: 50vh;
-  }
-`;
-
-const TextBackground = styled.div`
-  background-color: rgba(0, 0, 0, 0.5);
-  padding: 10px;
-  border-radius: 5px;
-  width: 80%;
-
-  @media (max-width: 400px) {
-    width: 90%;
-  }
-`;
-
-const Heading = styled.h1`
-  font-size: 4rem;
-  color: white;
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-
-  @media (max-width: 768px) {
-    font-size: 2.5rem;
-  }
-
-  @media (max-width: 400px) {
-    font-size: 2rem;
-  }
-`;
-
-const Text = styled.p`
-  font-size: 1.4rem;
-  color: white;
-
-  @media (max-width: 768px) {
-    font-size: 1.2rem;
-  }
-
-  @media (max-width: 400px) {
-    font-size: 1rem;
-  }
-`;
-
-const H2 = styled.h2`
-  font-size: 2.5rem;
-  color: #333;
-  margin-bottom: 20px;
-`;
-
-const Input = styled.input`
-  width: 85%;
-  padding: 12px;
-  margin-left: 30px;
-  margin-bottom: 20px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 16px;
-
-  &:focus {
-    border-color: #4DB6AC; // Focus state color
-  }
-`;
-
-const Button = styled.button`
-  width: 40%;
-  padding: 15px;
-  margin-left: 30px;
-  margin-top: 10px;
-  font-size: 18px;
-  color: white;
-  background-color: #4DB6AC;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-
-  &:hover {
-    background-color: #35a79c;
-  }
-
-  @media (max-width: 768px) {
-    width: 70%;
-    font-size: 20px;
-    padding: 8px 16px;
-  }
-
-  @media (max-width: 400px) {
-    width: 80%;
-    font-size: 18px;
-    padding: 6px 12px;
-  }
-`;
-
-const ErrorMessage = styled.p`
-  color: red;
-  font-weight: bold;
-  margin-left:30px;
-`;
-
+import {
+  StyleDiv, LeftSection, RightSection, TextBackground, Heading,
+  Text, H2, FormContainer, Input, ButtonGroup, Button, ErrorMessage
+} from '../AuthShared.styles';
 
 function LoginPage() {
   const [email, setEmail] = useState('');
@@ -153,15 +20,10 @@ function LoginPage() {
     try {
       const data = await api.login(email, password);
       localStorage.setItem('token', data.token);
-      console.log(data.token);
       navigate('/dashboard');
     } catch (err) {
       setError(err.message || 'Invalid email or password');
     }
-  };
-
-  const handleBack = () => {
-    navigate('/');
   };
 
   return (
@@ -173,8 +35,9 @@ function LoginPage() {
         </TextBackground>
       </LeftSection>
       <RightSection>
-        <H2>Login Form</H2>
-        <form onSubmit={handleSubmit}>
+        <H2>Login</H2>
+
+        <FormContainer onSubmit={handleSubmit}>
           <Input
             type="email"
             placeholder="Email"
@@ -189,12 +52,17 @@ function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
+
           {error && <ErrorMessage>{error}</ErrorMessage>}
-          <Button type="submit">Login</Button>
-          <Button onClick={handleBack} type="button">Back</Button>
-        </form>
+
+          <ButtonGroup>
+            <Button type="submit">Login</Button>
+            <Button type="button" $secondary onClick={() => navigate('/')}>Back</Button>
+          </ButtonGroup>
+        </FormContainer>
+
       </RightSection>
-    </StyleDiv >
+    </StyleDiv>
   );
 }
 

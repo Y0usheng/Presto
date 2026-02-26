@@ -82,6 +82,10 @@ function RegisterPage() {
           </ButtonGroup>
         </FormContainer>
 
+        <p style={{ marginTop: '20px', color: '#666' }}>
+          Already have an account? <span onClick={() => navigate('/login')} style={{ color: '#d83b01', cursor: 'pointer', fontWeight: 'bold' }}>Log in</span>
+        </p>
+
       </RightSection>
     </StyleDiv>
   );

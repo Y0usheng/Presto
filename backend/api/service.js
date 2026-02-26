@@ -1,7 +1,7 @@
 import AsyncLock from "async-lock";
 import fs from "fs";
 import jwt from "jsonwebtoken";
-import { AccessError, InputError } from "./error";
+import { AccessError, InputError } from "./error.js";
 
 const lock = new AsyncLock();
 
@@ -47,7 +47,7 @@ const update = async (admins) =>
           );
         }
         resolve();
-      } catch(error) {
+      } catch (error) {
         console.log(error);
         reject(new Error("Writing to database failed"));
       }
@@ -80,7 +80,7 @@ try {
     const data = JSON.parse(fs.readFileSync(DATABASE_FILE));
     admins = data.admins;
   }
-} catch(error) {
+} catch (error) {
   console.log("WARNING: No database found, create a new one");
   save();
 }
@@ -106,7 +106,7 @@ export const getEmailFromAuthorization = (authorization) => {
       throw new AccessError("Invalid Token");
     }
     return email;
-  } catch(error) {
+  } catch (error) {
     throw new AccessError("Invalid token");
   }
 };

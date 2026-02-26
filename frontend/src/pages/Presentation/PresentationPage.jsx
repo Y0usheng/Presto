@@ -2,20 +2,21 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { usePresentation } from '../../hooks/usePresentation';
-
-// 引入样式
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import {
   EditorWrapper, TopBar, TitleInput, ActionButton, Workspace,
   Sidebar, ToolButton, CanvasArea, SlideCanvas, BottomNav,
   NavText, ControlIconBtn
 } from './PresentationPage.styles';
 
-// 引入之前拆分好的 5 个独立 Modal 组件
 import TextModal from './components/TextModal';
 import ImageModal from './components/ImageModal';
 import VideoModal from './components/VideoModal';
 import CodeModal from './components/CodeModal';
 import BackgroundModal from './components/BackgroundModal';
+
+import DraggableElement from './components/DraggableElement';
 
 function PresentationPage() {
   const { id } = useParams();
@@ -62,6 +63,36 @@ function PresentationPage() {
       if (index !== currentSlideIndex) return slide;
       return { ...slide, background: newBackground };
     });
+    setSlides(updatedSlides);
+    await updateStoreWithSlides(updatedSlides);
+  };
+
+  // 处理元素拖拽结束后的位置保存
+  const handleDragEnd = async (elementIndex, newPosition) => {
+    const confirmDelete = window.confirm("Are you sure you want to delete this element?");
+    if (!confirmDelete) return;
+
+    const updatedSlides = slides.map((slide, index) => {
+      if (index !== currentSlideIndex) return slide;
+
+      const newElements = slide.elements.filter((_, i) => i !== elementIndex);
+      return { ...slide, elements: newElements };
+    });
+
+    setSlides(updatedSlides);
+    await updateStoreWithSlides(updatedSlides);
+  };
+
+  const handleResizeEnd = async (elementIndex, newWidth) => {
+    const updatedSlides = slides.map((slide, index) => {
+      if (index !== currentSlideIndex) return slide;
+
+      const newElements = [...(slide.elements || [])];
+      newElements[elementIndex] = { ...newElements[elementIndex], size: newWidth };
+
+      return { ...slide, elements: newElements };
+    });
+
     setSlides(updatedSlides);
     await updateStoreWithSlides(updatedSlides);
   };
@@ -122,89 +153,121 @@ function PresentationPage() {
 
             {/* 动态渲染幻灯片元素 (支持绝对定位和双击编辑) */}
             {slides[currentSlideIndex]?.elements?.map((element, index) => {
-              // 抽取公共的定位与层级样式
-              const baseStyle = {
-                position: 'absolute',
-                left: `${element.position?.x || 0}%`,
-                top: `${element.position?.y || 0}%`,
-                zIndex: element.layer || index,
-                cursor: 'pointer',
-              };
 
-              // 文本节点
+              // 1. 文本节点
               if (element.type === 'text') {
                 return (
-                  <div
+                  <DraggableElement
                     key={index}
-                    style={{
-                      ...baseStyle,
-                      fontSize: `${element.fontSize}em`,
-                      color: element.color,
-                      fontFamily: element.fontFamily,
-                      width: `${element.size}%`,
-                    }}
+                    initialPosition={element.position}
+                    initialWidth={element.size}
+                    zIndex={element.layer || index}
+                    onDragEnd={(newPos) => handleDragEnd(index, newPos)}
+                    onResizeEnd={(newWidth) => handleResizeEnd(index, newWidth)}
+                    onDelete={() => handleDeleteElement(index)}
                     onDoubleClick={() => setTextModalConfig({ isOpen: true, initialData: element, editIndex: index })}
                   >
-                    {element.text}
-                  </div>
+                    <div
+                      style={{
+                        fontSize: `${element.fontSize}em`,
+                        color: element.color,
+                        fontFamily: element.fontFamily,
+                        fontWeight: element.isBold ? 'bold' : 'normal',
+                        fontStyle: element.isItalic ? 'italic' : 'normal',
+                        whiteSpace: 'pre-wrap',
+                        lineHeight: '1.2',
+                        pointerEvents: 'none', // 让底层的 DraggableElement 捕获鼠标拖拽事件
+                      }}
+                    >
+                      {element.text}
+                    </div>
+                  </DraggableElement>
                 );
               }
 
-              // 图片节点
+              // 2. 图片节点
               if (element.type === 'image') {
                 return (
-                  <img
+                  <DraggableElement
                     key={index}
-                    src={element.source}
-                    alt={element.alt || 'slide-img'}
-                    style={{ ...baseStyle, width: `${element.size}%` }}
+                    initialPosition={element.position}
+                    initialWidth={element.size}
+                    zIndex={element.layer || index}
+                    onDragEnd={(newPos) => handleDragEnd(index, newPos)}
+                    onResizeEnd={(newWidth) => handleResizeEnd(index, newWidth)}
+                    onDelete={() => handleDeleteElement(index)}
                     onDoubleClick={() => setImageModalConfig({ isOpen: true, initialData: element, editIndex: index })}
-                  />
+                  >
+                    <img
+                      src={element.source}
+                      alt={element.alt || 'slide-img'}
+                      style={{
+                        width: '100%',     // 占满拖拽容器
+                        height: 'auto',    // 保持比例
+                        display: 'block',
+                        pointerEvents: 'none' // 防原生的图片拖拽冲突
+                      }}
+                    />
+                  </DraggableElement>
                 );
               }
 
-              // 视频节点
+              // 3. 视频节点
               if (element.type === 'video') {
                 return (
-                  <div
+                  <DraggableElement
                     key={index}
-                    style={{ ...baseStyle, width: `${element.size}%`, border: '2px dashed transparent' }}
+                    initialPosition={element.position}
+                    initialWidth={element.size}
+                    zIndex={element.layer || index}
+                    onDragEnd={(newPos) => handleDragEnd(index, newPos)}
+                    onResizeEnd={(newWidth) => handleResizeEnd(index, newWidth)}
+                    onDelete={() => handleDeleteElement(index)}
                     onDoubleClick={() => setVideoModalConfig({ isOpen: true, initialData: element, editIndex: index })}
                   >
-                    {/* 使用 iframe 嵌入 YouTube 等视频 */}
-                    <iframe
-                      src={element.source}
-                      width="100%"
-                      height="100%"
-                      style={{ aspectRatio: '16/9', pointerEvents: 'none' }} // pointerEvents none 防止双击被 iframe 拦截
-                      title="slide-video"
-                      frameBorder="0"
-                    />
-                  </div>
+                    <div style={{ width: '100%', aspectRatio: '16/9', pointerEvents: 'none' }}>
+                      <iframe
+                        src={element.source}
+                        width="100%"
+                        height="100%"
+                        style={{ border: 'none' }}
+                        title="slide-video"
+                      />
+                    </div>
+                  </DraggableElement>
                 );
               }
 
-              // 代码节点
+              // 4. 代码节点
               if (element.type === 'code') {
                 return (
-                  <div
+                  <DraggableElement
                     key={index}
-                    style={{
-                      ...baseStyle,
-                      fontSize: `${element.fontSize}em`,
-                      backgroundColor: '#282c34', // 程序员经典的暗色代码块背景
-                      color: '#abb2bf',
-                      padding: '16px',
-                      borderRadius: '8px',
-                      fontFamily: 'monospace',
-                      whiteSpace: 'pre-wrap',
-                      width: 'auto',
-                      minWidth: '200px'
-                    }}
+                    initialPosition={element.position}
+                    initialWidth={element.size}
+                    zIndex={element.layer || index}
+                    onDragEnd={(newPos) => handleDragEnd(index, newPos)}
+                    onResizeEnd={(newWidth) => handleResizeEnd(index, newWidth)}
+                    onDelete={() => handleDeleteElement(index)}
                     onDoubleClick={() => setCodeModalConfig({ isOpen: true, initialData: element, editIndex: index })}
                   >
-                    {element.code}
-                  </div>
+                    {/* 阻断鼠标事件，让 Draggable 接管拖拽，同时渲染超美的代码块 */}
+                    <div style={{ pointerEvents: 'none', width: '100%' }}>
+                      <SyntaxHighlighter
+                        language={element.language || 'javascript'}
+                        style={vscDarkPlus}
+                        customStyle={{
+                          margin: 0,
+                          padding: '16px',
+                          borderRadius: '8px',
+                          fontSize: `${element.fontSize}em`,
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                        }}
+                      >
+                        {element.code}
+                      </SyntaxHighlighter>
+                    </div>
+                  </DraggableElement>
                 );
               }
 

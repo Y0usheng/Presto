@@ -3,7 +3,7 @@ import cors from "cors";
 import express from "express";
 import fs from "fs";
 import swaggerUi from "swagger-ui-express";
-import swaggerDocument from "../swagger.json";
+import swaggerDocument from "../swagger.json" with { type: "json" };
 import { AccessError, InputError } from "./error.js";
 import {
   getEmailFromAuthorization,

@@ -1,179 +1,37 @@
-import { useState, useEffect } from 'react';
+// src/pages/Dashboard/Dashboard.jsx
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
-import 'w3-css/w3.css';
-import { Card, CardContent, Typography } from '@mui/material';
 import { api } from '../../utils/api';
-
-const DashboardWrapper = styled.div`
-  padding: 20px;
-  background-image: url('https://images.unsplash.com/photo-1493723843671-1d655e66ac1c?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NTB8fGJhY2tncm91bmR8ZW58MHx8MHx8fDA%3D');
-  background-size: cover;
-  background-position: center;
-  min-height: 100vh;
-
-  @media (max-width: 768px) {
-    padding: 10px;
-  }
-`;
-
-const Header = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-`;
-
-const Greeting = styled.h2`
-  margin-left: 5px;
-  font-size: 2rem;
-  color: #3a3a3a;
-
-  @media (max-width: 768px) {
-    font-size: 1.5rem;
-  }
-
-  @media (max-width: 400px) {
-    font-size: 1.2rem;
-  }
-`;
-
-const ListWork = styled.p`
-  margin-left: 10px;
-  font-size: 1.5rem;
-  color: #5a5a5a;
-
-  @media (max-width: 768px) {
-    font-size: 1rem;
-  }
-
-  @media (max-width: 400px) {
-    font-size: 0.8rem;
-  }
-`;
-
-const PresentationGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 30px;
-
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 20px;
-  }
-
-  @media (max-width: 400px) {
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    gap: 15px;
-  }
-`;
-
-const CardStyle = styled(Card)`
-  aspect-ratio: 2 / 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: stretch;
-  margin-top: 30px;
-  margin-left: 20px;
-
-  @media (max-width: 768px) {
-    aspect-ratio: 3 / 2;
-  }
-
-  @media (max-width: 400px) {
-    aspect-ratio: 1 / 1;
-  }
-`;
-
-const CustomCardContent = styled(CardContent)`
-  padding: 2px !important;
-  "&:last-child": {
-    paddingBottom: 3px !important;
-  }
-`;
-
-const TightTypography = styled(Typography)`
-  margin-bottom: 2px !important;
-  line-height: 1 !important; 
-`;
-
-const NewPresentationButton = styled.button`
-  margin-bottom: 20px;
-  margin-left: 20px;
-  padding: 10px 20px;
-  font-size: 16px;
-  cursor: pointer;
-  background-color: #ff7b54;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: background-color 0.3s, transform 0.2s;
-  &:hover {
-    background-color: #e66a48;
-    transform: scale(1.05);
-  }
-
-  @media (max-width: 768px) {
-    width: 100%;
-    font-size: 14px;
-  }
-
-  @media (max-width: 400px) {
-    font-size: 12px;
-  }
-`;
-
-const LogoutButton = styled.button`
-  padding: 10px;
-  font-size: 14px;
-  cursor: pointer;
-  background-color: #e74c3c;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: background-color 0.3s, transform 0.2s;
-
-  &:hover {
-    background-color: #c0392b;
-    transform: scale(1.05);
-  }
-
-  @media (max-width: 768px) {
-    width: 100%;
-    font-size: 12px;
-  }
-
-  @media (max-width: 400px) {
-    font-size: 10px;
-  }
-`;
+import {
+  DashboardWrapper, TopBar, Logo, LogoutButton, MainContent,
+  Greeting, GridContainer, Card, CreateCard, CreateIcon, CreateText,
+  ThumbnailArea, CardBody, PresentationTitle, SlideCount,
+  CardActions, ActionButton, ModalOverlay, ModalContent, ModalInput, ModalButtonGroup
+} from './Dashboard.styles';
 
 function Dashboard() {
   const [presentations, setPresentations] = useState([]);
-  const [newPresentation, setNewPresentation] = useState({ name: '', description: '', thumbnail: '' });
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      navigate('/login');
-    }
-  }, [navigate]);
 
   useEffect(() => {
     const fetchPresentations = async () => {
       try {
         const data = await api.getStore();
-        setPresentations(data.store || []);
+
+        // 🚨 核心 Bug 修复区 🚨
+        // 如果 data.store 是空对象 {} 或者 null（新用户），强制给一个空数组 []
+        const storeData = data.store;
+        if (Array.isArray(storeData)) {
+          setPresentations(storeData);
+        } else if (storeData && Array.isArray(storeData.presentations)) {
+          // 有些后端的写法可能会包裹一层
+          setPresentations(storeData.presentations);
+        } else {
+          // 兜底方案：如果是新用户，保证状态是一个空数组
+          setPresentations([]);
+        }
       } catch (error) {
         console.error('Error fetching presentations:', error);
       }
@@ -186,100 +44,132 @@ function Dashboard() {
     navigate('/login');
   };
 
-  const handleCreatePresentation = async () => {
-    try {
-      const updatedPresentations = [...presentations, {
-        ...newPresentation, id: presentations.length + 1, slides: [{ page: "Default Slide 1" }],
-        slidesCount: 1,
-      }];
+  const handleCreate = async () => {
+    if (!newTitle.trim()) return;
 
-      await api.updateStore(updatedPresentations);
-      setPresentations(updatedPresentations);
-      document.getElementById('newPresentationModal').style.display = 'none';
+    // 给新项目生成一个独立 ID (时间戳)
+    const newPresentation = {
+      id: Date.now(),
+      title: newTitle,
+      thumbnail: '',
+      description: '',
+      slides: [{ elements: [] }] // 默认自带第一张幻灯片
+    };
+
+    const updatedList = [...presentations, newPresentation];
+
+    try {
+      await api.updateStore(updatedList);
+      setPresentations(updatedList);
+      setIsModalOpen(false);
+      setNewTitle(''); // 清空输入框
     } catch (error) {
       console.error('Error creating presentation:', error);
     }
   };
 
+  const handleDelete = async (idToDelete) => {
+    const confirmDelete = window.confirm("Are you sure you want to delete this presentation?");
+    if (!confirmDelete) return;
+
+    // 过滤掉被删掉的项目
+    const updatedList = presentations.filter(p => p.id !== idToDelete);
+    try {
+      await api.updateStore(updatedList);
+      setPresentations(updatedList);
+    } catch (error) {
+      console.error('Error deleting presentation:', error);
+    }
+  };
+
   return (
     <DashboardWrapper>
-      <Header>
-        <Greeting>Hello! Ready for Project?</Greeting>
-        <LogoutButton onClick={handleLogout}>Logout</LogoutButton>
-      </Header>
+      {/* 顶部导航栏 */}
+      <TopBar>
+        <Logo onClick={() => navigate('/')}>
+          <svg width="24" height="24" viewBox="0 0 24 24">
+            <path d="M2 12C2 12 5 13 7 15C9 17 10 20 10 20C10 20 11 17 13 15C15 13 18 12 18 12C18 12 15 11 13 9C11 7 10 4 10 4C10 4 10 4 9 7 7 9 5 11 2 12 2 12Z" />
+            <path d="M16 4C16 4 17 4.5 18 5.5C19 6.5 19.5 7.5 19.5 7.5C19.5 7.5 20 6.5 21 5.5C22 4.5 23 4 23 4C23 4 22 3.5 21 2.5C20 1.5 19.5 0.5 19.5 0.5C19.5 0.5 19 1.5 18 2.5C17 3.5 16 4 16 4Z" />
+          </svg>
+          Presto
+        </Logo>
+        <LogoutButton onClick={handleLogout}>Log out</LogoutButton>
+      </TopBar>
 
-      <NewPresentationButton onClick={() => (document.getElementById('newPresentationModal').style.display = 'block')}>New Presentation</NewPresentationButton>
+      <MainContent>
+        {/* 大字号欢迎语 */}
+        <Greeting>What will you design today?</Greeting>
 
-      <ListWork>Your Working list:</ListWork>
-      <div id="newPresentationModal" className="w3-modal">
-        <div className="w3-modal-content w3-animate-top w3-card-4" style={{ padding: '20px', width: '400px' }}>
-          <header className="w3-container w3-teal">
-            <span
-              onClick={() => (document.getElementById('newPresentationModal').style.display = 'none')}
-              className="w3-button w3-display-topright"
-            >&times;</span>
-            <h2>Create New Presentation</h2>
-          </header>
-          <div className="w3-container">
-            <input
-              type="text"
-              placeholder="Name"
-              className="w3-input w3-border"
-              value={newPresentation.name}
-              onChange={(e) => setNewPresentation({ ...newPresentation, name: e.target.value })}
-              required
-            />
-            <br />
-            <input
-              type="text"
-              placeholder="Description"
-              className="w3-input w3-border"
-              value={newPresentation.description}
-              onChange={(e) => setNewPresentation({ ...newPresentation, description: e.target.value })}
-            />
-            <br />
-            <input
-              type="file"
-              className="w3-input w3-border"
-              onChange={(e) => setNewPresentation({ ...newPresentation, thumbnail: e.target.files[0] })}
-            />
-            <br />
-            <button className="w3-button w3-green" onClick={handleCreatePresentation}>Create</button>
-            <button className="w3-button w3-red" onClick={() => (document.getElementById('newPresentationModal').style.display = 'none')}>Cancel</button>
-          </div>
-        </div>
-      </div>
+        <GridContainer>
+          {/* 永远放在第一位的“新建设计”虚线卡片 */}
+          <CreateCard onClick={() => setIsModalOpen(true)}>
+            <div style={{ textAlign: 'center' }}>
+              <CreateIcon>+</CreateIcon>
+              <CreateText>Create design</CreateText>
+            </div>
+          </CreateCard>
 
-      {presentations.length === 0 ? (
-        <p>There is no project, please create a new project!</p>
-      ) : (
-        <PresentationGrid>
+          {/* 渲染后端返回的项目列表 */}
           {presentations.map((presentation) => (
-            <CardStyle key={presentation.id} onClick={() => navigate(`/presentation/${presentation.id}`)} style={{ cursor: 'pointer' }}>
-              <div
-                style={{
-                  backgroundImage: `url(${typeof presentation.thumbnail === 'object' ? URL.createObjectURL(presentation.thumbnail) : presentation.thumbnail || 'https://via.placeholder.com/300'})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  height: '50%',
-                  width: '100%',
-                }}
-              />
-              <CustomCardContent>
-                <TightTypography gutterBottom variant="h7" component="div">
-                  {presentation.name}
-                </TightTypography>
-                <TightTypography variant="body2" color="text.secondary">
-                  {presentation.description || 'No description provided'}
-                </TightTypography>
-                <TightTypography variant="body2" color="text.secondary">
-                  Slides: {presentation.slidesCount || 0}
-                </TightTypography>
-              </CustomCardContent>
-            </CardStyle>
+            <Card key={presentation.id}>
+              {/* 封面图区域，点击也能直接编辑 */}
+              <ThumbnailArea
+                $bgImage={presentation.thumbnail}
+                onClick={() => navigate(`/presentation/${presentation.id}`)}
+              >
+                {!presentation.thumbnail && 'No Thumbnail'}
+              </ThumbnailArea>
+
+              <CardBody>
+                <PresentationTitle title={presentation.title}>
+                  {presentation.title || 'Untitled Design'}
+                </PresentationTitle>
+                <SlideCount>
+                  {presentation.slides ? presentation.slides.length : 1} slide(s)
+                </SlideCount>
+
+                <CardActions>
+                  <ActionButton $primary onClick={() => navigate(`/presentation/${presentation.id}`)}>
+                    Edit
+                  </ActionButton>
+                  <ActionButton onClick={() => navigate(`/preview/${presentation.id}`)}>
+                    Play
+                  </ActionButton>
+                  <ActionButton $danger onClick={() => handleDelete(presentation.id)}>
+                    Del
+                  </ActionButton>
+                </CardActions>
+              </CardBody>
+            </Card>
           ))}
-        </PresentationGrid>
+        </GridContainer>
+      </MainContent>
+
+      {/* 点击新建弹出的漂亮弹窗 */}
+      {isModalOpen && (
+        <ModalOverlay onClick={() => setIsModalOpen(false)}>
+          {/* e.stopPropagation 阻止点击弹窗内容时关闭弹窗 */}
+          <ModalContent onClick={e => e.stopPropagation()}>
+            <h2 style={{ margin: '0 0 10px 0', color: '#0e1318' }}>Create a new presentation</h2>
+            <p style={{ margin: '0', color: '#5e6d77', fontSize: '14px' }}>Give your awesome design a name to get started.</p>
+
+            <ModalInput
+              autoFocus
+              type="text"
+              placeholder="e.g. Q4 Marketing Plan"
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleCreate()} /* 回车键快速新建 */
+            />
+
+            <ModalButtonGroup>
+              <ActionButton onClick={() => setIsModalOpen(false)}>Cancel</ActionButton>
+              <ActionButton $primary onClick={handleCreate}>Create</ActionButton>
+            </ModalButtonGroup>
+          </ModalContent>
+        </ModalOverlay>
       )}
+
     </DashboardWrapper>
   );
 }

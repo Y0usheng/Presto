@@ -1,368 +1,53 @@
-import { useState, useEffect } from 'react';
+// src/pages/Presentation/PresentationPage.jsx
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
-import { AppBar, Toolbar, Typography, IconButton, Button, TextField, Modal, Box, Checkbox, FormControlLabel, MenuItem, Select, InputLabel } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { Light as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { docco } from 'react-syntax-highlighter/dist/esm/styles/hljs';
-import javascript from 'react-syntax-highlighter/dist/esm/languages/hljs/javascript';
-import python from 'react-syntax-highlighter/dist/esm/languages/hljs/python';
-import c from 'react-syntax-highlighter/dist/esm/languages/hljs/c';
-import { SiJavascript, SiPython, SiC } from 'react-icons/si';
-import { api } from '../../utils/api';
+import { usePresentation } from '../../hooks/usePresentation';
+
+// 引入样式
+import {
+  EditorWrapper, TopBar, TitleInput, ActionButton, Workspace,
+  Sidebar, ToolButton, CanvasArea, SlideCanvas, BottomNav,
+  NavText, ControlIconBtn
+} from './PresentationPage.styles';
+
+// 引入之前拆分好的 5 个独立 Modal 组件
 import TextModal from './components/TextModal';
 import ImageModal from './components/ImageModal';
 import VideoModal from './components/VideoModal';
 import CodeModal from './components/CodeModal';
-
-SyntaxHighlighter.registerLanguage('javascript', javascript);
-SyntaxHighlighter.registerLanguage('python', python);
-SyntaxHighlighter.registerLanguage('c', c);
-
-const SlideArea = styled.div`
-  width:90vw;
-  height: 90vh;
-  max-width: 1000px;  
-  max-height: 800px;
-  border: 1px solid #ccc;
-  position: relative;
-  margin-top: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: ${(props) => props.background};
-
-  @media (max-width: 768px) {
-    max-width: 500px;  
-    max-height: 300px;
-  }
-
-  @media (max-width: 480px) {
-    max-width: 400px;  
-    max-height: 250px;
-  }
-`;
-
-const SlideNumber = styled.div`
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 50px;
-  height: 50px;
-  font-size: 1em;
-  color: #000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  @media (max-width: 768px) {
-    width: 40px;
-    height: 40px;
-    font-size: 0.9em;
-  }
-
-  @media (max-width: 480px) {
-    width: 30px;
-    height: 30px;
-    font-size: 0.8em;
-  }
-`;
-
-const VideoWrapper = styled.div`
-  position: absolute;
-  top: ${(props) => props.position.y}%;
-  left: ${(props) => props.position.x}%;
-  width: ${(props) => props.size}%;
-  border: 2px dashed #ccc;
-  padding: 5px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  @media (max-width: 768px) {
-    width: ${(props) => props.size * 0.9}%;
-  }
-
-  @media (max-width: 480px) {
-    width: ${(props) => props.size * 0.8}%;
-  }
-`;
-
-const Editing = styled.p`
-  margin-top: 20px;
-  margin-left: 10px;
-  font-size: 1.5rem;
-  color: #5a5a5a;
-
-  @media (max-width: 768px) {
-    font-size: 1rem;
-  }
-
-  @media (max-width: 400px) {
-    font-size: 0.8rem;
-  }
-`;
-
-const Description = styled.p`
-  margin-left: 10px;
-  margin-button: 30px;
-  font-size: 1.7rem;
-
-  @media (max-width: 768px) {
-    font-size: 1.5rem;
-  }
-
-  @media (max-width: 400px) {
-    font-size: 1rem;
-  }
-`;
-
-const Slide = styled.p`
-  margin-top: 20px;
-  margin-left: 10px;
-  font-size: 1.5rem;
-  color: #5a5a5a;
-
-  @media (max-width: 768px) {
-    font-size: 1rem;
-  }
-
-  @media (max-width: 400px) {
-    font-size: 0.8rem;
-  }
-`;
-
-const AddIn = styled.p`
-  margin-top: 20px;
-  margin-left: 10px;
-  font-size: 1.5rem;
-  color: #5a5a5a;
-
-  @media (max-width: 768px) {
-    font-size: 1rem;
-  }
-
-  @media (max-width: 400px) {
-    font-size: 0.8rem;
-  }
-`;
+import BackgroundModal from './components/BackgroundModal';
 
 function PresentationPage() {
-  const { id, slideNumber } = useParams();
+  const { id } = useParams();
   const navigate = useNavigate();
 
-  const [editTitleOpen, setEditTitleOpen] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
-  const [thumbnailModalOpen, setThumbnailModalOpen] = useState(false);
-  const [setNewThumbnail] = useState(null);
+  // 1. 数据逻辑 Hook（完美接管了所有的 fetch 和 state 更新）
+  const {
+    slides, setSlides, currentSlideIndex, title, loading,
+    updateStoreWithSlides, handleTitleChange, addSlide, deleteSlide, nextSlide, prevSlide
+  } = usePresentation(id);
 
-  const [slides, setSlides] = useState([]);
-  const [currentSlideIndex, setCurrentSlideIndex] = useState(parseInt(slideNumber) - 1 || 0);
-  const [presentation, setPresentation] = useState(null);
-
-  const [editElementIndex, setEditElementIndex] = useState(null);
-
+  // 2. 五大 Modal 的开关与数据状态管理
   const [textModalConfig, setTextModalConfig] = useState({ isOpen: false, initialData: null, editIndex: null });
-
   const [imageModalConfig, setImageModalConfig] = useState({ isOpen: false, initialData: null, editIndex: null });
-
   const [videoModalConfig, setVideoModalConfig] = useState({ isOpen: false, initialData: null, editIndex: null });
-
   const [codeModalConfig, setCodeModalConfig] = useState({ isOpen: false, initialData: null, editIndex: null });
+  const [bgModalOpen, setBgModalOpen] = useState(false);
 
-  const [backgroundModalOpen, setBackgroundModalOpen] = useState(false);
-  const [backgroundType, setBackgroundType] = useState('solid');
-  const [backgroundColor, setBackgroundColor] = useState('#ffffff');
-  const [gradientColors, setGradientColors] = useState({ start: '#ffffff', end: '#000000' });
-  const [gradientDirection, setGradientDirection] = useState('to right');
-  const [backgroundImage, setBackgroundImage] = useState('');
-
-  // 2.2.3. Basics of a presentation controls, Delete Presentation
-  const handleDelete = async () => {
-    if (window.confirm('Are you sure?')) {
-      try {
-        const data = await api.getStore();
-        let updatedStore = data.store.filter(p => p.id !== parseInt(id));
-        updatedStore = updatedStore.map((presentation, index) => ({
-          ...presentation,
-          id: index + 1,
-        }));
-
-        await api.updateStore(updatedStore);
-        navigate('/dashboard');
-      } catch (error) {
-        console.error('Error deleting presentation:', error);
-      }
-    }
-  };
-
-  // Gain the list of the presentation
-  useEffect(() => {
-    const fetchPresentation = async () => {
-      try {
-        const data = await api.getStore();
-        const foundPresentation = data.store.find(p => p.id === parseInt(id));
-        if (foundPresentation) {
-          setPresentation(foundPresentation);
-          setNewTitle(foundPresentation.name);
-          setSlides(foundPresentation.slides || []);
-        } else {
-          console.error('Presentation not found');
-        }
-      } catch (error) {
-        console.error('Error fetching presentation:', error);
-      }
-    };
-
-    fetchPresentation();
-  }, [id]);
-
-  // 2.4.4. URL Updating
-  useEffect(() => {
-    navigate(`/presentation/${id}/slide/${currentSlideIndex + 1}`, { replace: true });
-  }, [currentSlideIndex, id, navigate]);
-
-  useEffect(() => {
-    if (slideNumber) {
-      setCurrentSlideIndex(parseInt(slideNumber) - 1);
-    }
-  }, [slideNumber]);
-
-  // 2.2.4. Title editing
-  const handleTitleEdit = async () => {
-    try {
-      const data = await api.getStore();
-      const updatedStore = data.store.map((p) =>
-        p.id === parseInt(id) ? { ...p, name: newTitle } : p
-      );
-      const updateResponse = await api.updateStore(updatedStore);
-      if (updateResponse.ok) {
-        setPresentation((prev) => ({ ...prev, name: newTitle }));
-        setEditTitleOpen(false);
-      }
-    } catch (error) {
-      console.error('Error updating title:', error);
-    }
-  };
-
-  // 2.2.4. Thumbnail editing
-  const handleThumbnailUpdate = async (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64String = reader.result;
-        if (window.confirm('Are you sure you want to change the thumbnail?')) {
-          try {
-            const data = await api.getStore();
-            const updatedStore = data.store.map((p) =>
-              p.id === parseInt(id) ? { ...p, thumbnail: base64String } : p
-            );
-            const updateResponse = await api.updateStore(updatedStore);
-            if (updateResponse.ok) {
-              setPresentation((prev) => ({ ...prev, thumbnail: base64String }));
-              setNewThumbnail(base64String);
-              setThumbnailModalOpen(false);
-            }
-          } catch (error) {
-            console.error('Error updating thumbnail:', error);
-          }
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // 2.2.5. Creating slides
-  const handleAddSlide = async () => {
-    try {
-      const newSlides = [...slides, { page: `Slide ${slides.length + 1}` }];
-      setSlides(newSlides);
-      const updatedPresentation = { ...presentation, slides: newSlides, slidesCount: newSlides.length };
-      setPresentation(updatedPresentation);
-      const data = await api.getStore();
-      const updatedStore = data.store.map((p) => (p.id === parseInt(id) ? updatedPresentation : p));
-      const updateResponse = await api.updateStore(updatedStore);
-      if (updateResponse.ok) {
-        setPresentation(updatedPresentation);
-      } else {
-        console.error('Failed to update presentation');
-      }
-    } catch (error) {
-      console.error('Error adding slide:', error);
-    }
-  };
-
-  // 2.2.6.Deleting slides
-  const handleDeleteSlide = async () => {
-    if (slides.length === 1) {
-      alert('Cannot delete the only slide. Please delete the presentation instead.');
-      return;
-    }
-
-    const newSlides = slides.filter((_, index) => index !== currentSlideIndex);
-    setSlides(newSlides);
-
-    const updatedPresentation = { ...presentation, slides: newSlides, slidesCount: newSlides.length };
-
-    try {
-      const data = await api.getStore();
-      const updatedStore = data.store.map((p) => (p.id === parseInt(id) ? updatedPresentation : p));
-      const updateResponse = await api.updateStore(updatedStore);
-      if (updateResponse.ok) {
-        setPresentation(updatedPresentation);
-        if (currentSlideIndex > 0) {
-          setCurrentSlideIndex(currentSlideIndex - 1);
-        }
-      } else {
-        console.error('Failed to update presentation');
-      }
-    } catch (error) {
-      console.error('Error deleting slide:', error);
-    }
-  };
-
-  // 2.2.5. Moving between
-  const handleSlideNavigation = (direction) => {
-    if (direction === 'next' && currentSlideIndex < slides.length - 1) {
-      setCurrentSlideIndex(currentSlideIndex + 1);
-    } else if (direction === 'prev' && currentSlideIndex > 0) {
-      setCurrentSlideIndex(currentSlideIndex - 1);
-    }
-  };
-
-  // 2.3.1. Putting TEXT on the slide
-  const handleAddTextElement = () => {
-    setAddTextModalOpen(true);
-  };
-
-  const updateStoreWithSlides = async (updatedSlides) => {
-    try {
-      const data = await api.getStore();
-      const updatedStore = data.store.map((p) => p.id === parseInt(id) ? { ...p, slides: updatedSlides } : p);
-      const updateResponse = await api.updateStore(updatedStore);
-      if (!updateResponse.ok) {
-        console.error('Failed to update presentation');
-      }
-    } catch (error) {
-      console.error('Error updating presentation:', error);
-    }
-  };
-
-  const handleSaveTextElement = async (textElementData) => {
-    const isEditing = textModalConfig.editIndex !== null;
+  // 3. 通用的元素保存处理函数 (完美复用，替代了以前冗长的各类 handleAddXXX)
+  const handleSaveElement = async (modalConfig, elementData) => {
+    const isEditing = modalConfig.editIndex !== null;
 
     const updatedSlides = slides.map((slide, index) => {
       if (index !== currentSlideIndex) return slide;
 
       const newElements = [...(slide.elements || [])];
       if (isEditing) {
-        // 修改现有元素
-        newElements[textModalConfig.editIndex] = { ...newElements[textModalConfig.editIndex], ...textElementData };
+        // 编辑模式：覆盖原有元素
+        newElements[modalConfig.editIndex] = { ...newElements[modalConfig.editIndex], ...elementData };
       } else {
-        // 添加新元素，加上 layer 属性
-        newElements.push({ ...textElementData, layer: newElements.length });
+        // 新增模式：推入新元素并分配层级
+        newElements.push({ ...elementData, layer: newElements.length });
       }
       return { ...slide, elements: newElements };
     });
@@ -371,499 +56,211 @@ function PresentationPage() {
     await updateStoreWithSlides(updatedSlides);
   };
 
-  // 2.3.2. Putting an IMAGE on the slide
-  const handleSaveImageElement = async (imageElementData) => {
-    const isEditing = imageModalConfig.editIndex !== null;
-
+  // 专属的背景保存函数
+  const handleSaveBackground = async (newBackground) => {
     const updatedSlides = slides.map((slide, index) => {
       if (index !== currentSlideIndex) return slide;
-
-      const newElements = [...(slide.elements || [])];
-      if (isEditing) {
-        newElements[imageModalConfig.editIndex] = { ...newElements[imageModalConfig.editIndex], ...imageElementData };
-      } else {
-        newElements.push({ ...imageElementData, layer: newElements.length });
-      }
-      return { ...slide, elements: newElements };
+      return { ...slide, background: newBackground };
     });
-
     setSlides(updatedSlides);
     await updateStoreWithSlides(updatedSlides);
   };
 
-  // 2.3.3. Putting a VIDEO on the slide
-  const handleSaveVideoElement = async (videoElementData) => {
-    const isEditing = videoModalConfig.editIndex !== null;
-
-    const updatedSlides = slides.map((slide, index) => {
-      if (index !== currentSlideIndex) return slide;
-
-      const newElements = [...(slide.elements || [])];
-      if (isEditing) {
-        newElements[videoModalConfig.editIndex] = { ...newElements[videoModalConfig.editIndex], ...videoElementData };
-      } else {
-        newElements.push({ ...videoElementData, layer: newElements.length });
-      }
-      return { ...slide, elements: newElements };
-    });
-
-    setSlides(updatedSlides);
-    await updateStoreWithSlides(updatedSlides);
-  };
-
-  // 2.3.4. Putting CODE on the slide
-  const handleSaveCodeElement = async (codeElementData) => {
-    const isEditing = codeModalConfig.editIndex !== null;
-
-    const updatedSlides = slides.map((slide, index) => {
-      if (index !== currentSlideIndex) return slide;
-
-      const newElements = [...(slide.elements || [])];
-      if (isEditing) {
-        newElements[codeModalConfig.editIndex] = { ...newElements[codeModalConfig.editIndex], ...codeElementData };
-      } else {
-        newElements.push({ ...codeElementData, layer: newElements.length });
-      }
-      return { ...slide, elements: newElements };
-    });
-
-    setSlides(updatedSlides);
-    await updateStoreWithSlides(updatedSlides);
-  };
-
-  // 2.4.2. Theme and background picker
-  const handleBackgroundChange = async () => {
-    const updatedSlides = slides.map((slide, index) =>
-      index === currentSlideIndex
-        ? {
-          ...slide,
-          background: {
-            type: backgroundType,
-            color: backgroundColor,
-            gradient: {
-              direction: gradientDirection,
-              start: gradientColors.start,
-              end: gradientColors.end,
-            },
-            image: backgroundImage,
-          },
-        }
-        : slide
-    );
-
-    setSlides(updatedSlides);
-    setBackgroundModalOpen(false);
-  };
-
-  const getSlideBackgroundStyle = (slide) => {
-    if (!slide?.background) {
-      return '#ffffff';
-    }
-    if (slide.background.type === 'solid') {
-      return slide.background.color;
-    } else if (slide.background.type === 'gradient') {
-      return `linear-gradient(${slide.background.gradient.direction}, ${slide.background.gradient.start}, ${slide.background.gradient.end})`;
-    } else if (slide.background.type === 'image') {
-      return `url(${slide.background.image})`;
-    }
-    return '#ffffff';
-  };
+  if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading Editor...</div>;
 
   return (
-    <div>
-      <AppBar position="static" color="default">
-        <Toolbar>
-          <IconButton edge="start" color="inherit" onClick={() => navigate('/dashboard')} aria-label="back">
-            <ArrowBackIcon />
-          </IconButton>
-          <Typography variant="h4" style={{ flexGrow: 1 }}>
-            Slide title: {presentation?.name}
-          </Typography>
-          <Button color="inherit" onClick={() => localStorage.removeItem('token') && navigate('/login')}>
-            Log out
-          </Button>
-        </Toolbar>
-      </AppBar>
-
-      <Description>Slide description: {presentation?.description}</Description>
-
-      {/* All button implemented */}
-      <Editing>Editing:</Editing>
-      <Button variant="outlined" onClick={() => setThumbnailModalOpen(true)} style={{ marginLeft: '10px' }}>
-        Update Thumbnail
-      </Button>
-      <Button variant="outlined" onClick={() => setEditTitleOpen(true)} style={{ marginLeft: '10px' }}>
-        Edit Title
-      </Button>
-      <Button variant="contained" color="error" onClick={handleDelete} style={{ marginLeft: '10px' }}>
-        Delete Presentation
-      </Button>
-
-      <Slide>Slide Change:</Slide>
-      <Button variant="outlined" onClick={handleAddSlide} style={{ marginLeft: '10px' }}>Add Slide</Button>
-      <Button variant="outlined" color="error" onClick={handleDeleteSlide} style={{ marginLeft: '10px' }}>Delete Slide</Button>
-
-      <AddIn>Add in Slide:</AddIn>
-      <Button variant="outlined" onClick={() => setTextModalConfig({ isOpen: true, initialData: null, editIndex: null })} style={{ marginLeft: '10px' }}>Add Text Element</Button>
-      <Button variant="outlined" onClick={() => setImageModalConfig({ isOpen: true, initialData: null, editIndex: null })} style={{ marginLeft: '10px' }}>Add Image</Button>
-      <Button variant="outlined" onClick={() => setVideoModalConfig({ isOpen: true, initialData: null, editIndex: null })} style={{ marginLeft: '10px' }}>Add Video</Button>
-      <Button variant="outlined" onClick={() => setCodeModalConfig({ isOpen: true, initialData: null, editIndex: null })} style={{ marginLeft: '10px' }}>Add Code Block</Button>
-      <Button variant="outlined" onClick={() => setBackgroundModalOpen(true)} style={{ marginLeft: '10px' }}>Change Background</Button>
-      <Button variant="outlined" onClick={() => window.open(`/preview/${id}`, '_blank')} style={{ marginLeft: '10px' }}> Preview</Button>
-
-      {/* 2.2.5. Moving between */}
-      {slides.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', position: 'relative' }}>
-          <div style={{ textAlign: 'center', marginTop: '20px' }}>
-            <Button
-              disabled={currentSlideIndex === 0}
-              onClick={() => handleSlideNavigation('prev')}
-            >
-              Previous
-            </Button>
-            <span>Slide {currentSlideIndex + 1} of {slides.length}</span>
-            <Button
-              disabled={currentSlideIndex === slides.length - 1}
-              onClick={() => handleSlideNavigation('next')}
-            >
-              Next
-            </Button>
-            <Typography variant="h4">{slides[currentSlideIndex]?.page}</Typography>
-          </div>
-
-          <div style={{ textAlign: 'center', marginTop: '10px' }}>
-            <SlideArea background={getSlideBackgroundStyle(slides[currentSlideIndex])}>
-              <SlideNumber>{currentSlideIndex + 1}</SlideNumber>
-              {slides[currentSlideIndex]?.elements?.map((element, index) => {
-                //////////////////////////////////////
-                // 2.3.1. Putting TEXT on the slide //
-                //////////////////////////////////////
-                if (element.type === 'text') {
-                  return (
-                    <div
-                      key={index}
-                      style={{
-                        position: 'absolute',
-                        top: `${element.position.y}%`,
-                        left: `${element.position.x}%`,
-                        width: `${element.size}%`,
-                        border: '1px solid grey',
-                        padding: '5px',
-                        cursor: 'pointer',
-                        fontFamily: element.fontFamily,
-                        textAlign: 'left',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'flex-start',
-                      }}
-                      onDoubleClick={() => {
-                        setTextModalConfig({
-                          isOpen: true,
-                          initialData: element,
-                          editIndex: index
-                        });
-                      }}
-                      onContextMenu={(e) => {
-                        e.preventDefault();
-                        const updatedElements = slides[currentSlideIndex].elements.filter((_, i) => i !== index);
-                        const updatedSlides = slides.map((slide, slideIndex) =>
-                          slideIndex === currentSlideIndex ? { ...slide, elements: updatedElements } : slide
-                        );
-                        setSlides(updatedSlides);
-                        updateStoreWithSlides(updatedSlides);
-                      }}
-                    >
-                      <span style={{ fontSize: `${element.fontSize}em`, color: element.color }}>
-                        {element.text}
-                      </span>
-                    </div>
-                  );
-                  //////////////////////////////////////////
-                  // 2.3.2. Putting an IMAGE on the slide //
-                  //////////////////////////////////////////
-                } else if (element.type === 'image') {
-                  return (
-                    <img
-                      key={index}
-                      src={element.source}
-                      alt={element.alt}
-                      style={{
-                        position: 'absolute',
-                        top: `${element.position.y}%`,
-                        left: `${element.position.x}%`,
-                        width: `${element.size}%`,
-                        cursor: 'pointer',
-                        border: '1px solid grey',
-                      }}
-                      onDoubleClick={() => {
-                        setImageModalConfig({
-                          isOpen: true,
-                          initialData: element,
-                          editIndex: index
-                        });
-                      }}
-                      onContextMenu={(e) => {
-                        e.preventDefault();
-                        const updatedElements = slides[currentSlideIndex].elements.filter((_, i) => i !== index);
-                        const updatedSlides = slides.map((slide, slideIndex) =>
-                          slideIndex === currentSlideIndex ? { ...slide, elements: updatedElements } : slide
-                        );
-                        setSlides(updatedSlides);
-                        updateStoreWithSlides(updatedSlides);
-                      }}
-                    />
-                  );
-
-                  /////////////////////////////////////////
-                  // 2.3.3. Putting a VIDEO on the slide //
-                  /////////////////////////////////////////
-                } else if (element.type === 'video') {
-                  return (
-                    <VideoWrapper
-                      key={index}
-                      size={element.size}
-                      position={element.position}
-                      onDoubleClick={() => {
-                        setVideoModalConfig({
-                          isOpen: true,
-                          initialData: element,
-                          editIndex: index
-                        });
-                      }}
-                      onContextMenu={(e) => {
-                        e.preventDefault();
-                        const updatedElements = slides[currentSlideIndex].elements.filter((_, i) => i !== index);
-                        const updatedSlides = slides.map((slide, slideIndex) =>
-                          slideIndex === currentSlideIndex ? { ...slide, elements: updatedElements } : slide
-                        );
-                        setSlides(updatedSlides);
-                      }}
-                    >
-                      <iframe src={element.source} width="100%" height="auto" autoPlay={element.autoPlay} />
-                    </VideoWrapper>
-                  );
-
-                  /////////////////////////////////////////
-                  // 2.3.4. Putting CODE on the slide //
-                  /////////////////////////////////////////
-                } else if (element.type === 'code') {
-                  let languageIcon;
-                  let languageName;
-
-                  switch (element.language) {
-                    case 'javascript':
-                      languageIcon = <SiJavascript color="#F0DB4F" size={24} />;
-                      languageName = "JavaScript";
-                      break;
-                    case 'python':
-                      languageIcon = <SiPython color="#306998" size={24} />;
-                      languageName = "Python";
-                      break;
-                    case 'c':
-                      languageIcon = <SiC color="#00599C" size={24} />;
-                      languageName = "C";
-                      break;
-                    default:
-                      languageName = element.language;
-                      break;
-                  }
-
-                  return (
-                    <div
-                      key={index}
-                      style={{
-                        position: 'absolute',
-                        top: `${element.position.y}%`,
-                        left: `${element.position.x}%`,
-                        width: '80%',
-                        border: '1px solid grey',
-                        padding: '10px',
-                        cursor: 'pointer',
-                        backgroundColor: '#f5f5f5',
-                        overflow: 'auto',
-                        textAlign: 'left',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'flex-start',
-                      }}
-                      onDoubleClick={() => {
-                        setCodeModalConfig({
-                          isOpen: true,
-                          initialData: element,
-                          editIndex: index
-                        });
-                      }}
-                      onContextMenu={(e) => {
-                        e.preventDefault();
-                        const updatedElements = slides[currentSlideIndex].elements.filter((_, i) => i !== index);
-                        const updatedSlides = slides.map((slide, slideIndex) =>
-                          slideIndex === currentSlideIndex ? { ...slide, elements: updatedElements } : slide
-                        );
-                        setSlides(updatedSlides);
-                        updateStoreWithSlides(updatedSlides);
-                      }}
-                    >
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        marginBottom: '8px',
-                        backgroundColor: '#e0e0e0',
-                        padding: '5px',
-                        borderRadius: '6px 6px 0 0',
-                      }}>
-                        {languageIcon}
-                        <span style={{ marginLeft: '8px', fontWeight: 'bold' }}>{languageName}</span>
-                      </div>
-
-                      <SyntaxHighlighter
-                        language={element.language}
-                        style={docco}
-                        customStyle={{ fontSize: `${element.fontSize}em`, whiteSpace: 'pre-wrap' }}
-                      >
-                        {element.code}
-                      </SyntaxHighlighter>
-                    </div>
-                  );
-                }
-                return null;
-              })}
-            </SlideArea>
-          </div>
+    <EditorWrapper>
+      {/* 顶部导航栏 */}
+      <TopBar>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <ActionButton onClick={() => navigate('/dashboard')}>Home</ActionButton>
         </div>
-      )}
 
-      {/* Model for 2.2.4. Title editing */}
-      <Modal open={editTitleOpen} onClose={() => setEditTitleOpen(false)}>
-        <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', boxShadow: 24, p: 4, }}>
-          <h2>Edit Presentation Title</h2>
-          <TextField fullWidth label="Title" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} margin="normal" />
-          <Button variant="contained" onClick={handleTitleEdit}>Save </Button>
-        </Box>
-      </Modal>
+        <TitleInput
+          value={title}
+          onChange={(e) => handleTitleChange(e.target.value)}
+          placeholder="Enter presentation title"
+        />
 
-      {/* Model for 2.2.4. Thumbnail editing */}
-      <Modal open={thumbnailModalOpen} onClose={() => setThumbnailModalOpen(false)}>
-        <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', boxShadow: 24, p: 4, }}>
-          <Typography variant="h6" mb={2}>
-            Upload New Thumbnail
-          </Typography>
-          <input type="file" onChange={handleThumbnailUpdate} />
-        </Box>
-      </Modal>
+        <div>
+          <ActionButton onClick={() => navigate(`/preview/${id}`)}>Preview ▶</ActionButton>
+          {/* 这里触发一下 state 刷新或加个提示即可，因为每次修改已经通过 hook 自动 save 了 */}
+          <ActionButton $primary onClick={() => alert('All changes saved!')}>Save</ActionButton>
+        </div>
+      </TopBar>
 
-      {/* Model for 2.3.1. Putting an Text on the slide */}
+      {/* 核心工作区 */}
+      <Workspace>
+
+        {/* 左侧 Canva 风格工具栏 */}
+        <Sidebar>
+          <ToolButton onClick={() => setTextModalConfig({ isOpen: true, initialData: null, editIndex: null })}>
+            <strong style={{ fontSize: '20px' }}>T</strong>
+            <span>Text</span>
+          </ToolButton>
+          <ToolButton onClick={() => setImageModalConfig({ isOpen: true, initialData: null, editIndex: null })}>
+            <strong style={{ fontSize: '18px' }}>🖼️</strong>
+            <span>Image</span>
+          </ToolButton>
+          <ToolButton onClick={() => setVideoModalConfig({ isOpen: true, initialData: null, editIndex: null })}>
+            <strong style={{ fontSize: '18px' }}>▶️</strong>
+            <span>Video</span>
+          </ToolButton>
+          <ToolButton onClick={() => setCodeModalConfig({ isOpen: true, initialData: null, editIndex: null })}>
+            <strong style={{ fontSize: '18px' }}>{'</>'}</strong>
+            <span>Code</span>
+          </ToolButton>
+          <ToolButton onClick={() => setBgModalOpen(true)}>
+            <strong style={{ fontSize: '18px' }}>🎨</strong>
+            <span>Bg</span>
+          </ToolButton>
+        </Sidebar>
+
+        {/* 中央 16:9 画布区 */}
+        <CanvasArea>
+          <SlideCanvas $bg={slides[currentSlideIndex]?.background || '#ffffff'}>
+
+            {/* 动态渲染幻灯片元素 (支持绝对定位和双击编辑) */}
+            {slides[currentSlideIndex]?.elements?.map((element, index) => {
+              // 抽取公共的定位与层级样式
+              const baseStyle = {
+                position: 'absolute',
+                left: `${element.position?.x || 0}%`,
+                top: `${element.position?.y || 0}%`,
+                zIndex: element.layer || index,
+                cursor: 'pointer',
+              };
+
+              // 文本节点
+              if (element.type === 'text') {
+                return (
+                  <div
+                    key={index}
+                    style={{
+                      ...baseStyle,
+                      fontSize: `${element.fontSize}em`,
+                      color: element.color,
+                      fontFamily: element.fontFamily,
+                      width: `${element.size}%`,
+                    }}
+                    onDoubleClick={() => setTextModalConfig({ isOpen: true, initialData: element, editIndex: index })}
+                  >
+                    {element.text}
+                  </div>
+                );
+              }
+
+              // 图片节点
+              if (element.type === 'image') {
+                return (
+                  <img
+                    key={index}
+                    src={element.source}
+                    alt={element.alt || 'slide-img'}
+                    style={{ ...baseStyle, width: `${element.size}%` }}
+                    onDoubleClick={() => setImageModalConfig({ isOpen: true, initialData: element, editIndex: index })}
+                  />
+                );
+              }
+
+              // 视频节点
+              if (element.type === 'video') {
+                return (
+                  <div
+                    key={index}
+                    style={{ ...baseStyle, width: `${element.size}%`, border: '2px dashed transparent' }}
+                    onDoubleClick={() => setVideoModalConfig({ isOpen: true, initialData: element, editIndex: index })}
+                  >
+                    {/* 使用 iframe 嵌入 YouTube 等视频 */}
+                    <iframe
+                      src={element.source}
+                      width="100%"
+                      height="100%"
+                      style={{ aspectRatio: '16/9', pointerEvents: 'none' }} // pointerEvents none 防止双击被 iframe 拦截
+                      title="slide-video"
+                      frameBorder="0"
+                    />
+                  </div>
+                );
+              }
+
+              // 代码节点
+              if (element.type === 'code') {
+                return (
+                  <div
+                    key={index}
+                    style={{
+                      ...baseStyle,
+                      fontSize: `${element.fontSize}em`,
+                      backgroundColor: '#282c34', // 程序员经典的暗色代码块背景
+                      color: '#abb2bf',
+                      padding: '16px',
+                      borderRadius: '8px',
+                      fontFamily: 'monospace',
+                      whiteSpace: 'pre-wrap',
+                      width: 'auto',
+                      minWidth: '200px'
+                    }}
+                    onDoubleClick={() => setCodeModalConfig({ isOpen: true, initialData: element, editIndex: index })}
+                  >
+                    {element.code}
+                  </div>
+                );
+              }
+
+              return null;
+            })}
+
+          </SlideCanvas>
+        </CanvasArea>
+
+      </Workspace>
+
+      {/* 底部导航栏 */}
+      <BottomNav>
+        <ControlIconBtn onClick={addSlide} title="Add New Slide">➕ Add Slide</ControlIconBtn>
+        <ControlIconBtn onClick={deleteSlide} title="Delete Slide" style={{ color: '#d32f2f' }}>🗑️ Delete</ControlIconBtn>
+
+        <div style={{ width: '1px', height: '24px', background: '#e2e6ea', margin: '0 15px' }} />
+
+        <ControlIconBtn onClick={prevSlide} disabled={currentSlideIndex === 0}>◀</ControlIconBtn>
+        <NavText>Slide {currentSlideIndex + 1} of {slides.length}</NavText>
+        <ControlIconBtn onClick={nextSlide} disabled={currentSlideIndex === slides.length - 1}>▶</ControlIconBtn>
+      </BottomNav>
+
+      {/* 统一挂载 5 个功能弹窗 */}
       <TextModal
         open={textModalConfig.isOpen}
         onClose={() => setTextModalConfig({ ...textModalConfig, isOpen: false })}
-        onSave={handleSaveTextElement}
+        onSave={(data) => handleSaveElement(textModalConfig, data)}
         initialData={textModalConfig.initialData}
       />
-
-      {/* Model for 2.3.2. Putting an IMAGE on the slide */}
       <ImageModal
         open={imageModalConfig.isOpen}
         onClose={() => setImageModalConfig({ ...imageModalConfig, isOpen: false })}
-        onSave={handleSaveImageElement}
+        onSave={(data) => handleSaveElement(imageModalConfig, data)}
         initialData={imageModalConfig.initialData}
       />
-
-      {/* Model for 2.3.3. Putting a VIDEO on the slide */}
       <VideoModal
         open={videoModalConfig.isOpen}
         onClose={() => setVideoModalConfig({ ...videoModalConfig, isOpen: false })}
-        onSave={handleSaveVideoElement}
+        onSave={(data) => handleSaveElement(videoModalConfig, data)}
         initialData={videoModalConfig.initialData}
       />
-
-      {/* Model for 2.3.4. Putting CODE on the slide */}
       <CodeModal
         open={codeModalConfig.isOpen}
         onClose={() => setCodeModalConfig({ ...codeModalConfig, isOpen: false })}
-        onSave={handleSaveCodeElement}
+        onSave={(data) => handleSaveElement(codeModalConfig, data)}
         initialData={codeModalConfig.initialData}
       />
+      <BackgroundModal
+        open={bgModalOpen}
+        onClose={() => setBgModalOpen(false)}
+        onSave={handleSaveBackground}
+        currentBackground={slides[currentSlideIndex]?.background}
+      />
 
-      {/* Model for 2.4.2. Theme and background picker */}
-      <Modal open={backgroundModalOpen} onClose={() => setBackgroundModalOpen(false)}>
-        <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 500, bgcolor: 'background.paper', boxShadow: 24, p: 4 }}>
-          <Typography variant="h6" gutterBottom>Change Background</Typography>
-
-          <InputLabel id="background-type-label">Background Type</InputLabel>
-          <Select
-            labelId="background-type-label"
-            value={backgroundType}
-            onChange={(e) => setBackgroundType(e.target.value)}
-            fullWidth
-            margin="normal"
-          >
-            <MenuItem value="solid">Solid Color</MenuItem>
-            <MenuItem value="gradient">Gradient</MenuItem>
-            <MenuItem value="image">Image</MenuItem>
-          </Select>
-
-          {backgroundType === 'solid' && (
-            <TextField
-              fullWidth
-              label="Background Color"
-              type="color"
-              value={backgroundColor}
-              onChange={(e) => setBackgroundColor(e.target.value)}
-              margin="normal"
-            />
-          )}
-
-          {backgroundType === 'gradient' && (
-            <>
-              <InputLabel id="gradient-direction-label">Gradient Direction</InputLabel>
-              <Select
-                labelId="gradient-direction-label"
-                value={gradientDirection}
-                onChange={(e) => setGradientDirection(e.target.value)}
-                fullWidth
-                margin="normal"
-              >
-                <MenuItem value="to right">Left to Right</MenuItem>
-                <MenuItem value="to bottom">Top to Bottom</MenuItem>
-              </Select>
-              <TextField
-                fullWidth
-                label="Start Color"
-                type="color"
-                value={gradientColors.start}
-                onChange={(e) => setGradientColors({ ...gradientColors, start: e.target.value })}
-                margin="normal"
-              />
-              <TextField
-                fullWidth
-                label="End Color"
-                type="color"
-                value={gradientColors.end}
-                onChange={(e) => setGradientColors({ ...gradientColors, end: e.target.value })}
-                margin="normal"
-              />
-            </>
-          )}
-
-          {backgroundType === 'image' && (
-            <input
-              type="file"
-              onChange={(e) => {
-                const file = e.target.files[0];
-                if (file) {
-                  const reader = new FileReader();
-                  reader.onloadend = () => {
-                    setBackgroundImage(reader.result);
-                  };
-                  reader.readAsDataURL(file);
-                }
-              }}
-            />
-          )}
-
-          <Button variant="contained" onClick={handleBackgroundChange} style={{ marginTop: '20px' }}>Apply Background</Button>
-        </Box>
-      </Modal>
-    </div>
+    </EditorWrapper>
   );
 }
 

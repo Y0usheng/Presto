@@ -33,16 +33,16 @@ const SlideThumbnail = ({ slide }) => {
         };
 
         if (el.type === 'text') {
-          return <div key={i} style={{ ...baseStyle, fontSize: `${el.fontSize * 1.5}em`, color: el.color, fontFamily: el.fontFamily, fontWeight: el.isBold ? 'bold' : 'normal', fontStyle: el.isItalic ? 'italic' : 'normal', whiteSpace: 'pre-wrap', lineHeight: '1.2' }}>{el.text}</div>;
+          return <div key={i} style={{ ...baseStyle, fontSize: `${el.fontSize * 2}cqw`, color: el.color, fontFamily: el.fontFamily, fontWeight: el.isBold ? 'bold' : 'normal', fontStyle: el.isItalic ? 'italic' : 'normal', whiteSpace: 'pre-wrap', lineHeight: '1.2' }}>{el.text}</div>;
         }
         if (el.type === 'image') {
-          return <img key={i} src={el.source} alt="" style={{ ...baseStyle, height: 'auto' }} />;
+          return <img key={i} src={el.source} alt="" style={{ ...baseStyle, height: 'auto', display: 'block' }} />;
         }
         if (el.type === 'video') {
-          return <div key={i} style={{ ...baseStyle, aspectRatio: '16/9', background: '#0e1318', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '4px' }}>▶️ Video</div>;
+          return <div key={i} style={{ ...baseStyle, aspectRatio: '16/9', background: '#0e1318', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '0.5cqw', fontSize: '2.5cqw' }}>▶️ Video</div>;
         }
         if (el.type === 'code') {
-          return <div key={i} style={{ ...baseStyle, background: '#282c34', color: '#abb2bf', padding: '4px', borderRadius: '2px', fontSize: '1.5em', borderLeft: '2px solid #61dafb' }}>{'</>'} Code</div>;
+          return <div key={i} style={{ ...baseStyle, padding: '1cqw', background: '#282c34', color: '#abb2bf', borderRadius: '0.5cqw', fontSize: `${el.fontSize * 1.5}cqw`, borderLeft: '0.3cqw solid #61dafb' }}>{'</>'} Code</div>;
         }
         return null;
       })}

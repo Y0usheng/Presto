@@ -1,172 +1,139 @@
-import { useState, useEffect } from 'react';
+// src/pages/PreviewPage/PreviewPage.jsx
+import React, { useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
-import { Button, Typography } from '@mui/material';
-import { api } from '../../utils/api';
+import { usePresentation } from '../../hooks/usePresentation';
 
-const FullScreenSlide = styled.div`
-    width: 100vw;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    background: ${(props) => props.background};
-`;
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
-const SlideContent = styled.div`
-    width: 80%;
-    height: 80%;
-    position: relative;
-`;
+import {
+  PreviewContainer, SlideWrapper, ControlBar, ControlBtn,
+  SlideIndicator, TopActions, ActionPill
+} from './PreviewPage.styles';
 
-function PreviewPage() {
-  const { id, slideNumber } = useParams();
+export default function PreviewPage() {
+  const { id } = useParams();
   const navigate = useNavigate();
-  const [slides, setSlides] = useState([]);
-  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+
+  const { slides, currentSlideIndex, loading, nextSlide, prevSlide } = usePresentation(id);
+
+  const handleExit = useCallback((destination) => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(err => console.log(err));
+    }
+    navigate(destination);
+  }, [navigate]);
 
   useEffect(() => {
-    const fetchPresentation = async () => {
-      try {
-        const data = await api.getStore();
-        const foundPresentation = data.store.find(p => p.id === parseInt(id));
-
-        if (foundPresentation) {
-          setSlides(foundPresentation.slides || []);
-        } else {
-          console.error('Presentation not found');
-        }
-      } catch (error) {
-        console.error('Error fetching presentation:', error);
+    const handleKeyDown = (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') {
+        nextSlide();
+      } else if (e.key === 'ArrowLeft') {
+        prevSlide();
+      } else if (e.key === 'Escape') {
+        handleExit(`/presentation/${id}`);
       }
     };
 
-    fetchPresentation();
-  }, [id]);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [nextSlide, prevSlide, handleExit, id]);
 
-  useEffect(() => {
-    navigate(`/preview/${id}/slide/${currentSlideIndex + 1}`, { replace: true });
-  }, [currentSlideIndex, id, navigate]);
-
-  useEffect(() => {
-    if (slideNumber) {
-      setCurrentSlideIndex(parseInt(slideNumber) - 1);
-    }
-  }, [slideNumber]);
-
-  const getSlideBackgroundStyle = (slide) => {
-    if (!slide?.background) {
-      return '#ffffff';
-    }
-    if (slide.background.type === 'solid') {
-      return slide.background.color;
-    } else if (slide.background.type === 'gradient') {
-      return `linear-gradient(${slide.background.gradient.direction}, ${slide.background.gradient.start}, ${slide.background.gradient.end})`;
-    } else if (slide.background.type === 'image') {
-      return `url(${slide.background.image})`;
-    }
-    return '#ffffff';
-  };
-
-  const handleSlideNavigation = (direction) => {
-    if (direction === 'next' && currentSlideIndex < slides.length - 1) {
-      setCurrentSlideIndex(currentSlideIndex + 1);
-    } else if (direction === 'prev' && currentSlideIndex > 0) {
-      setCurrentSlideIndex(currentSlideIndex - 1);
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => console.log(err));
+    } else {
+      document.exitFullscreen().catch(err => console.log(err));
     }
   };
+
+  const formatVideoUrl = (source, autoPlay) => {
+    if (!autoPlay) return source;
+    const separator = source.includes('?') ? '&' : '?';
+    return `${source}${separator}autoplay=1&mute=1`;
+  };
+
+  if (loading) return <div style={{ backgroundColor: '#0e1318', height: '100vh', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading Presentation...</div>;
+
+  const currentSlide = slides[currentSlideIndex];
 
   return (
-    <FullScreenSlide background={getSlideBackgroundStyle(slides[currentSlideIndex])}>
-      <SlideContent>
-        {slides[currentSlideIndex]?.elements?.map((element, index) => {
-          if (element.type === 'text') {
+    <PreviewContainer>
+      <TopActions>
+        <ActionPill onClick={() => handleExit('/dashboard')}>
+          🏠 Dashboard
+        </ActionPill>
+        <ActionPill onClick={() => handleExit(`/presentation/${id}`)}>
+          ✏️ Editor (Esc)
+        </ActionPill>
+      </TopActions>
+
+      <SlideWrapper $bg={currentSlide?.background}>
+        {currentSlide?.elements?.map((el, i) => {
+
+          const baseStyle = {
+            position: 'absolute',
+            left: `${el.position?.x}%`,
+            top: `${el.position?.y}%`,
+            width: el.size ? `${el.size}%` : 'max-content',
+            zIndex: el.layer || i,
+          };
+
+          if (el.type === 'text') {
             return (
-              <div
-                key={index}
-                style={{
-                  position: 'absolute',
-                  top: `${element.position.y}%`,
-                  left: `${element.position.x}%`,
-                  width: `${element.size}%`,
-                  color: element.color,
-                  fontSize: `${element.fontSize}em`,
-                }}
-              >
-                {element.text}
+              <div key={i} style={{ ...baseStyle, fontSize: `${el.fontSize * 2}cqw`, color: el.color, fontFamily: el.fontFamily, fontWeight: el.isBold ? 'bold' : 'normal', fontStyle: el.isItalic ? 'italic' : 'normal', whiteSpace: 'pre-wrap', lineHeight: '1.2' }}>
+                {el.text}
               </div>
             );
-          } else if (element.type === 'image') {
+          }
+          if (el.type === 'image') {
+            return <img key={i} src={el.source} alt={el.alt || ''} style={{ ...baseStyle, height: 'auto', display: 'block' }} />;
+          }
+          if (el.type === 'video') {
             return (
-              <img
-                key={index}
-                src={element.source}
-                alt={element.alt}
-                style={{
-                  position: 'absolute',
-                  top: `${element.position.y}%`,
-                  left: `${element.position.x}%`,
-                  width: `${element.size}%`,
-                }}
-              />
+              <div key={i} style={{ ...baseStyle, aspectRatio: '16/9' }}>
+                <iframe
+                  src={formatVideoUrl(el.source, el.autoPlay)}
+                  width="100%" height="100%" style={{ border: 'none' }}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen title="video"
+                />
+              </div>
             );
-          } else if (element.type === 'video') {
+          }
+          if (el.type === 'code') {
             return (
-              <video
-                key={index}
-                src={element.source}
-                width={`${element.size}%`}
-                style={{
-                  position: 'absolute',
-                  top: `${element.position.y}%`,
-                  left: `${element.position.x}%`,
-                }}
-                controls
-                autoPlay={element.autoPlay}
-              />
-            );
-          } else if (element.type === 'code') {
-            return (
-              <pre
-                key={index}
-                style={{
-                  position: 'absolute',
-                  top: `${element.position.y}%`,
-                  left: `${element.position.x}%`,
-                  width: '80%',
-                  fontSize: `${element.fontSize}em`,
-                  whiteSpace: 'pre-wrap',
-                  backgroundColor: '#f5f5f5',
-                  padding: '10px',
-                }}
-              >
-                <code>{element.code}</code>
-              </pre>
+              <div key={i} style={{ ...baseStyle }}>
+                <SyntaxHighlighter
+                  language={element.language || 'javascript'}
+                  style={vscDarkPlus}
+                  customStyle={{
+                    margin: 0,
+                    padding: '1.5cqw',
+                    borderRadius: '0.8cqw',
+                    fontSize: `${element.fontSize * 1.5}cqw`,
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                  }}
+                >
+                  {el.code}
+                </SyntaxHighlighter>
+              </div>
             );
           }
           return null;
         })}
-      </SlideContent>
+      </SlideWrapper>
 
-      <div style={{ position: 'absolute', bottom: '20px', display: 'flex', gap: '20px' }}>
-        <Button
-          disabled={currentSlideIndex === 0}
-          onClick={() => handleSlideNavigation('prev')}
-        >
-          Previous
-        </Button>
-        <Typography>Slide {currentSlideIndex + 1} of {slides.length}</Typography>
-        <Button
-          disabled={currentSlideIndex === slides.length - 1}
-          onClick={() => handleSlideNavigation('next')}
-        >
-          Next
-        </Button>
-      </div>
-    </FullScreenSlide>
+      <ControlBar>
+        <ControlBtn onClick={prevSlide} disabled={currentSlideIndex === 0} title="Previous (Left Arrow)">◀</ControlBtn>
+        <SlideIndicator>{currentSlideIndex + 1} / {slides.length}</SlideIndicator>
+        <ControlBtn onClick={nextSlide} disabled={currentSlideIndex === slides.length - 1} title="Next (Right Arrow)">▶</ControlBtn>
+
+        <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.2)', margin: '0 10px' }}></div>
+
+        <ControlBtn onClick={toggleFullscreen} title="Toggle Fullscreen" style={{ fontSize: '18px' }}>⛶</ControlBtn>
+      </ControlBar>
+
+    </PreviewContainer>
   );
 }
-
-export default PreviewPage;

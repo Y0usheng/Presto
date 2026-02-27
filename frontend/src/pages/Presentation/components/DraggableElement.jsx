@@ -139,16 +139,14 @@ export default function DraggableElement({
                     onPointerUp={handleResizeUp}
                     style={{
                         position: 'absolute',
-                        bottom: '-6px',
-                        right: '-6px',
-                        width: '14px',
-                        height: '14px',
-                        background: '#ffffff',
-                        border: '3px solid #d83b01',
-                        borderRadius: '50%',
-                        cursor: 'nwse-resize',
-                        zIndex: 10,
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+                        left: `${pos.x}%`,
+                        top: `${pos.y}%`,
+                        zIndex: zIndex,
+                        width: width ? `${width}%` : 'max-content',
+                        cursor: isDragging ? 'grabbing' : 'grab',
+                        outline: showControls ? '2px dashed #d83b01' : '2px dashed transparent',
+                        outlineOffset: '4px',
+                        transition: (isDragging || isResizing) ? 'none' : 'outline 0.2s',
                     }}
                     title="Drag to resize"
                 />

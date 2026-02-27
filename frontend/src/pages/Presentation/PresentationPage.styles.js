@@ -9,7 +9,6 @@ export const EditorWrapper = styled.div`
   overflow: hidden;
 `;
 
-// --- 顶部导航栏 ---
 export const TopBar = styled.header`
   height: 60px;
   background: #ffffff;
@@ -50,14 +49,12 @@ export const ActionButton = styled.button`
   &:hover { background: ${props => props.$primary ? '#b83201' : '#e2e6ea'}; }
 `;
 
-// --- 核心工作区 (包含侧边栏和画布) ---
 export const Workspace = styled.div`
   display: flex;
   flex: 1;
   overflow: hidden;
 `;
 
-// --- 左侧工具栏 ---
 export const Sidebar = styled.aside`
   width: 80px;
   background: #ffffff;
@@ -92,7 +89,6 @@ export const ToolButton = styled.button`
   }
 `;
 
-// --- 中央画布区域 ---
 export const CanvasArea = styled.main`
   flex: 1;
   display: flex;
@@ -113,10 +109,10 @@ export const SlideCanvas = styled.div`
   box-shadow: 0 10px 30px rgba(0,0,0,0.08);
   border: 1px solid #e2e6ea;
   position: relative;
-  overflow: hidden; /* 防止元素拖拽出界 */
+  overflow: hidden;
+  container-type: inline-size;
 `;
 
-// --- 底部控制栏 ---
 export const BottomNav = styled.footer`
   height: 50px;
   background: #ffffff;

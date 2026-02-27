@@ -185,7 +185,7 @@ function PresentationPage() {
                   >
                     <div
                       style={{
-                        fontSize: `${element.fontSize}em`,
+                        fontSize: `${element.fontSize * 2}cqw`,
                         color: element.color,
                         fontFamily: element.fontFamily,
                         fontWeight: element.isBold ? 'bold' : 'normal',
@@ -294,9 +294,9 @@ function PresentationPage() {
                         style={vscDarkPlus}
                         customStyle={{
                           margin: 0,
-                          padding: '16px',
-                          borderRadius: '8px',
-                          fontSize: `${element.fontSize}em`,
+                          padding: '1.5cqw',
+                          borderRadius: '0.8cqw',
+                          fontSize: `${element.fontSize * 1.5}cqw`,
                           boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
                         }}
                       >

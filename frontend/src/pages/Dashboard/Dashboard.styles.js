@@ -121,6 +121,8 @@ export const ThumbnailWrapper = styled.div`
   overflow: hidden;
   border-bottom: 1px solid #e2e6ea;
   background: #ffffff;
+  container-type: inline-size;
+  
   &:hover .hover-overlay {
     opacity: 1;
   }
@@ -202,24 +204,44 @@ export const DeleteIconBtn = styled.button`
 
 export const ModalOverlay = styled.div`
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.5); display: flex; align-items: center; justifyContent: center;
-  z-index: 1000; backdrop-filter: blur(4px);
+  background: rgba(0,0,0,0.5); 
+  display: flex; 
+  align-items: center; 
+  justify-content: center;
+  z-index: 1000; 
+  backdrop-filter: blur(4px);
 `;
 
 export const ModalContent = styled.div`
-  background: white; padding: 30px; border-radius: 12px; width: 100%; max-width: 400px;
+  background: white; 
+  padding: 30px; 
+  border-radius: 12px; 
+  width: 100%; 
+  max-width: 400px;
   box-shadow: 0 20px 40px rgba(0,0,0,0.2);
 `;
 
 export const ModalInput = styled.input`
-  width: 100%; padding: 12px; border: 2px solid #e2e6ea; border-radius: 6px; margin: 20px 0; font-size: 16px; box-sizing: border-box;
+  width: 100%;
+  padding: 12px; 
+  border: 2px solid #e2e6ea; 
+  border-radius: 6px; margin: 20px 0; 
+  font-size: 16px; 
+  box-sizing: border-box;
   &:focus { border-color: #d83b01; outline: none; }
 `;
 
 export const ModalButtonGroup = styled.div`
-  display: flex; justify-content: flex-end; gap: 12px;
+  display: flex; 
+  justify-content: flex-end;
+  gap: 12px;
 `;
 export const ActionButton = styled.button`
-  padding: 8px 16px; font-weight: 600; border-radius: 4px; cursor: pointer; border: 1px solid transparent; transition: all 0.2s;
+  padding: 8px 16px; 
+  font-weight: 600; 
+  border-radius: 4px; 
+  cursor: pointer; 
+  border: 1px solid transparent; 
+  transition: all 0.2s;
   ${props => props.$primary ? `background: #d83b01; color: white; &:hover { background: #b83201; }` : `background: #f1f3f5; color: #0e1318; &:hover { background: #e2e6ea; }`}
 `;

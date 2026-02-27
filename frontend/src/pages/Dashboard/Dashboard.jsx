@@ -9,47 +9,6 @@ import {
   ModalOverlay, ModalContent, ModalInput, ModalButtonGroup, ActionButton
 } from './Dashboard.styles';
 
-const SlideThumbnail = ({ slide }) => {
-  if (!slide) return null;
-
-  return (
-    <div style={{
-      width: '100%',
-      height: '100%',
-      background: slide.background?.startsWith('url') ? slide.background : (slide.background || '#ffffff'),
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      position: 'relative',
-      fontSize: '6px',
-      overflow: 'hidden'
-    }}>
-      {slide.elements?.map((el, i) => {
-        const baseStyle = {
-          position: 'absolute',
-          left: `${el.position?.x}%`,
-          top: `${el.position?.y}%`,
-          width: el.size ? `${el.size}%` : 'max-content',
-          zIndex: el.layer || i,
-        };
-
-        if (el.type === 'text') {
-          return <div key={i} style={{ ...baseStyle, fontSize: `${el.fontSize * 2}cqw`, color: el.color, fontFamily: el.fontFamily, fontWeight: el.isBold ? 'bold' : 'normal', fontStyle: el.isItalic ? 'italic' : 'normal', whiteSpace: 'pre-wrap', lineHeight: '1.2' }}>{el.text}</div>;
-        }
-        if (el.type === 'image') {
-          return <img key={i} src={el.source} alt="" style={{ ...baseStyle, height: 'auto', display: 'block' }} />;
-        }
-        if (el.type === 'video') {
-          return <div key={i} style={{ ...baseStyle, aspectRatio: '16/9', background: '#0e1318', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '0.5cqw', fontSize: '2.5cqw' }}>▶️ Video</div>;
-        }
-        if (el.type === 'code') {
-          return <div key={i} style={{ ...baseStyle, padding: '1cqw', background: '#282c34', color: '#abb2bf', borderRadius: '0.5cqw', fontSize: `${el.fontSize * 1.5}cqw`, borderLeft: '0.3cqw solid #61dafb' }}>{'</>'} Code</div>;
-        }
-        return null;
-      })}
-    </div>
-  );
-};
-
 function Dashboard() {
   const [presentations, setPresentations] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -141,12 +100,20 @@ function Dashboard() {
           </CreateCard>
 
           {presentations.map((presentation) => {
+            let coverImage = presentation.thumbnail || presentation.slides?.[0]?.background || '#e8ecef';
+            if (coverImage.startsWith('data:image')) {
+              coverImage = `url(${coverImage})`;
+            }
+
             return (
               <Card key={presentation.id}>
                 <ThumbnailWrapper>
-
-                  <SlideThumbnail slide={presentation.slides?.[0]} />
-
+                  <div style={{
+                    width: '100%', height: '100%',
+                    background: coverImage.startsWith('url') ? coverImage : (coverImage || '#ffffff'),
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                  }} />
                   <HoverOverlay className="hover-overlay">
                     <OverlayButton $primary onClick={() => navigate(`/presentation/${presentation.id}`)}>
                       ✏️ Edit

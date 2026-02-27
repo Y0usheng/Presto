@@ -1,3 +1,4 @@
+// src/hooks/usePresentation.js
 import { useState, useEffect } from 'react';
 import { api } from '../utils/api';
 
@@ -6,10 +7,9 @@ export function usePresentation(id) {
     const [slides, setSlides] = useState([{ elements: [] }]);
     const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
     const [title, setTitle] = useState('');
+    const [thumbnail, setThumbnail] = useState('');
     const [loading, setLoading] = useState(true);
-    const [bgModalOpen, setBgModalOpen] = useState(false);
 
-    // 初始化获取数据
     useEffect(() => {
         const fetchPresentation = async () => {
             try {
@@ -22,6 +22,7 @@ export function usePresentation(id) {
                     setPresentation(found);
                     setSlides(found.slides || [{ elements: [] }]);
                     setTitle(found.title || 'Untitled Design');
+                    setThumbnail(found.thumbnail || '');
                 }
             } catch (error) {
                 console.error('Error fetching presentation:', error);
@@ -32,26 +33,25 @@ export function usePresentation(id) {
         fetchPresentation();
     }, [id]);
 
-    // 统一的更新服务器方法
-    const updateStoreWithSlides = async (updatedSlides, newTitle = title) => {
+    const updateStoreWithSlides = async (updatedSlides, newTitle = title, newThumbnail = thumbnail) => {
         try {
             const data = await api.getStore();
             const storeData = data.store;
             const list = Array.isArray(storeData) ? storeData : (storeData?.presentations || []);
 
             const updatedStore = list.map(p =>
-                p.id === parseInt(id) ? { ...p, slides: updatedSlides, title: newTitle } : p
+                p.id === parseInt(id) ? { ...p, slides: updatedSlides, title: newTitle, thumbnail: newThumbnail } : p
             );
             await api.updateStore(updatedStore);
+            setThumbnail(newThumbnail);
         } catch (error) {
             console.error('Error updating store:', error);
         }
     };
 
-    // 基础操作方法封装
     const handleTitleChange = (newTitle) => {
         setTitle(newTitle);
-        updateStoreWithSlides(slides, newTitle);
+        updateStoreWithSlides(slides, newTitle, thumbnail);
     };
 
     const addSlide = () => {
@@ -83,32 +83,8 @@ export function usePresentation(id) {
         if (currentSlideIndex > 0) setCurrentSlideIndex(currentSlideIndex - 1);
     };
 
-    const handleSaveBackground = async (newBackground) => {
-        const updatedSlides = slides.map((slide, index) => {
-            // 只有当前正在编辑的幻灯片才修改背景
-            if (index !== currentSlideIndex) return slide;
-            return { ...slide, background: newBackground };
-        });
-
-        setSlides(updatedSlides);
-        await updateStoreWithSlides(updatedSlides);
-    };
-
     return {
-        presentation,
-        slides,
-        setSlides,
-        currentSlideIndex,
-        title,
-        loading,
-        updateStoreWithSlides,
-        handleTitleChange,
-        addSlide,
-        deleteSlide,
-        nextSlide,
-        prevSlide,
-        handleSaveBackground,
-        bgModalOpen,
-        setBgModalOpen
+        presentation, slides, setSlides, currentSlideIndex, title, thumbnail, loading,
+        updateStoreWithSlides, handleTitleChange, addSlide, deleteSlide, nextSlide, prevSlide
     };
 }

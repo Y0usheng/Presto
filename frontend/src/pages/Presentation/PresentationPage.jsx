@@ -28,6 +28,11 @@ function PresentationPage() {
     updateStoreWithSlides, handleTitleChange, addSlide, deleteSlide, nextSlide, prevSlide
   } = usePresentation(id);
 
+  const [localTitle, setLocalTitle] = useState('');
+  useEffect(() => {
+    if (title) setLocalTitle(title);
+  }, [title]);
+
   // 2. 五大 Modal 的开关与数据状态管理
   const [textModalConfig, setTextModalConfig] = useState({ isOpen: false, initialData: null, editIndex: null });
   const [imageModalConfig, setImageModalConfig] = useState({ isOpen: false, initialData: null, editIndex: null });
@@ -38,23 +43,39 @@ function PresentationPage() {
   // 3. 通用的元素保存处理函数 (完美复用，替代了以前冗长的各类 handleAddXXX)
   const handleSaveElement = async (modalConfig, elementData) => {
     const isEditing = modalConfig.editIndex !== null;
-
     const updatedSlides = slides.map((slide, index) => {
       if (index !== currentSlideIndex) return slide;
 
       const newElements = [...(slide.elements || [])];
       if (isEditing) {
-        // 编辑模式：覆盖原有元素
         newElements[modalConfig.editIndex] = { ...newElements[modalConfig.editIndex], ...elementData };
       } else {
-        // 新增模式：推入新元素并分配层级
-        newElements.push({ ...elementData, layer: newElements.length });
+        const uniqueId = `el_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+        newElements.push({ ...elementData, id: uniqueId, layer: newElements.length });
       }
       return { ...slide, elements: newElements };
     });
 
     setSlides(updatedSlides);
     await updateStoreWithSlides(updatedSlides);
+  };
+
+  const handleManualSave = async () => {
+    const canvasEl = document.getElementById('slide-canvas-container');
+    let newThumbnail = thumbnail;
+
+    if (canvasEl) {
+      try {
+        // scale: 0.5 缩小截图体积，useCORS 允许跨域图片渲染
+        const canvas = await html2canvas(canvasEl, { scale: 0.5, useCORS: true, allowTaint: false });
+        newThumbnail = canvas.toDataURL('image/jpeg', 0.6); // 压缩为 JPG 节省空间
+      } catch (err) {
+        console.error("Failed to capture thumbnail", err);
+      }
+    }
+
+    await updateStoreWithSlides(slides, localTitle, newThumbnail);
+    alert('All changes & thumbnail saved successfully!');
   };
 
   // 专属的背景保存函数
@@ -124,15 +145,16 @@ function PresentationPage() {
         </div>
 
         <TitleInput
-          value={title}
-          onChange={(e) => handleTitleChange(e.target.value)}
+          value={localTitle}
+          onChange={(e) => setLocalTitle(e.target.value)}
+          onBlur={() => handleTitleChange(localTitle)}
           placeholder="Enter presentation title"
         />
 
         <div>
           <ActionButton onClick={() => navigate(`/preview/${id}`)}>Preview ▶</ActionButton>
           {/* 这里触发一下 state 刷新或加个提示即可，因为每次修改已经通过 hook 自动 save 了 */}
-          <ActionButton $primary onClick={() => alert('All changes saved!')}>Save</ActionButton>
+          <ActionButton $primary onClick={handleManualSave}>Save</ActionButton>
         </div>
       </TopBar>
 
@@ -165,7 +187,7 @@ function PresentationPage() {
 
         {/* 中央 16:9 画布区 */}
         <CanvasArea>
-          <SlideCanvas $bg={slides[currentSlideIndex]?.background || '#ffffff'}>
+          <SlideCanvas id="slide-canvas-container" $bg={slides[currentSlideIndex]?.background || '#ffffff'}>
 
             {/* 动态渲染幻灯片元素 (支持绝对定位和双击编辑) */}
             {slides[currentSlideIndex]?.elements?.map((element, index) => {
@@ -174,7 +196,7 @@ function PresentationPage() {
               if (element.type === 'text') {
                 return (
                   <DraggableElement
-                    key={index}
+                    key={element.id || index}
                     initialPosition={element.position}
                     initialWidth={element.size}
                     zIndex={element.layer || index}
@@ -205,7 +227,7 @@ function PresentationPage() {
               if (element.type === 'image') {
                 return (
                   <DraggableElement
-                    key={index}
+                    key={element.id || index}
                     initialPosition={element.position}
                     initialWidth={element.size}
                     zIndex={element.layer || index}
@@ -232,7 +254,7 @@ function PresentationPage() {
               if (element.type === 'video') {
                 return (
                   <DraggableElement
-                    key={index}
+                    key={element.id || index}
                     initialPosition={element.position}
                     initialWidth={element.size}
                     zIndex={element.layer || index}
@@ -278,7 +300,7 @@ function PresentationPage() {
               if (element.type === 'code') {
                 return (
                   <DraggableElement
-                    key={index}
+                    key={element.id || index}
                     initialPosition={element.position}
                     initialWidth={element.size}
                     zIndex={element.layer || index}

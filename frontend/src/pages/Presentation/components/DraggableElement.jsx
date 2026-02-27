@@ -5,9 +5,13 @@ export default function DraggableElement({
     children,
     initialPosition,
     initialWidth,
+    isActive,
+    onSelect,
     onDragEnd,
     onResizeEnd,
     onDelete,
+    onBringToFront,
+    onSendToBack,
     onDoubleClick,
     zIndex
 }) {
@@ -29,9 +33,11 @@ export default function DraggableElement({
         if (initialWidth !== undefined) setWidth(initialWidth);
     }, [initialWidth]);
 
+    // ================= 1. 拖拽逻辑 (带边界限制) =================
     const handlePointerDown = (e) => {
         if (isResizing) return;
         e.stopPropagation();
+        onSelect();
         setIsDragging(true);
         dragStart.current = { clientX: e.clientX, clientY: e.clientY, startX: pos.x, startY: pos.y };
         e.currentTarget.setPointerCapture(e.pointerId);
@@ -40,8 +46,14 @@ export default function DraggableElement({
     const handlePointerMove = (e) => {
         if (!isDragging) return;
         const parent = e.currentTarget.parentElement;
-        const percentX = dragStart.current.startX + ((e.clientX - dragStart.current.clientX) / parent.offsetWidth) * 100;
-        const percentY = dragStart.current.startY + ((e.clientY - dragStart.current.clientY) / parent.offsetHeight) * 100;
+
+        let percentX = dragStart.current.startX + ((e.clientX - dragStart.current.clientX) / parent.offsetWidth) * 100;
+        let percentY = dragStart.current.startY + ((e.clientY - dragStart.current.clientY) / parent.offsetHeight) * 100;
+
+        const maxSafeX = width ? 100 - width : 95;
+        percentX = Math.max(0, Math.min(maxSafeX, percentX));
+        percentY = Math.max(0, Math.min(95, percentY));
+
         setPos({ x: percentX, y: percentY });
     };
 
@@ -53,8 +65,10 @@ export default function DraggableElement({
         if (onDragEnd) onDragEnd(pos);
     };
 
+    // ================= 2. 拉伸逻辑 (带边界限制) =================
     const handleResizeDown = (e) => {
         e.stopPropagation();
+        onSelect();
         setIsResizing(true);
         const canvas = e.currentTarget.parentElement.parentElement;
         const currentWidthPct = width || (e.currentTarget.parentElement.offsetWidth / canvas.offsetWidth) * 100;
@@ -68,7 +82,9 @@ export default function DraggableElement({
         const canvas = e.currentTarget.parentElement.parentElement;
         const deltaX = e.clientX - resizeStart.current.clientX;
         const deltaPct = (deltaX / canvas.offsetWidth) * 100;
-        const newWidth = Math.max(5, resizeStart.current.startWidth + deltaPct);
+
+        const maxWidth = 100 - pos.x;
+        const newWidth = Math.max(5, Math.min(maxWidth, resizeStart.current.startWidth + deltaPct));
         setWidth(newWidth);
     };
 
@@ -80,7 +96,7 @@ export default function DraggableElement({
         if (onResizeEnd) onResizeEnd(width);
     };
 
-    const showControls = isHovered || isDragging || isResizing;
+    const showHoverHint = !isActive && isHovered;
 
     return (
         <div
@@ -94,61 +110,75 @@ export default function DraggableElement({
                 position: 'absolute',
                 left: `${pos.x}%`,
                 top: `${pos.y}%`,
-                zIndex: zIndex,
+                zIndex: isActive ? zIndex + 1000 : zIndex,
                 width: width ? `${width}%` : 'max-content',
                 cursor: isDragging ? 'grabbing' : 'grab',
-                border: showControls ? '2px dashed #d83b01' : '2px dashed transparent',
-                padding: '4px',
-                transition: (isDragging || isResizing) ? 'none' : 'border 0.2s',
+
+                outline: isActive ? '2px solid #d83b01' : (showHoverHint ? '2px dashed rgba(216, 59, 1, 0.4)' : '2px solid transparent'),
+                outlineOffset: '4px',
+                transition: (isDragging || isResizing) ? 'none' : 'outline 0.2s',
             }}
         >
-            {showControls && onDelete && (
+
+            {isActive && (
                 <div
                     onPointerDown={(e) => e.stopPropagation()}
-                    onClick={(e) => { e.stopPropagation(); onDelete(); }}
                     style={{
                         position: 'absolute',
-                        top: '-12px',
-                        right: '-12px',
-                        background: '#ef4444',
-                        color: 'white',
-                        width: '24px',
-                        height: '24px',
-                        borderRadius: '50%',
+                        top: '-45px',
+                        left: '0',
+                        background: '#ffffff',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                        borderRadius: '8px',
+                        padding: '4px',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                        fontSize: '16px',
-                        fontWeight: 'bold',
+                        gap: '4px',
                         zIndex: 10,
-                        boxShadow: '0 2px 5px rgba(0,0,0,0.3)',
-                        lineHeight: 1
+                        border: '1px solid #e2e6ea'
                     }}
-                    title="Delete Element"
                 >
-                    ×
+                    <button
+                        onClick={onBringToFront} title="Bring to Front"
+                        style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '6px', borderRadius: '4px', transition: 'background 0.2s' }}
+                        onMouseOver={e => e.currentTarget.style.background = '#f1f3f5'} onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                    >⬆️</button>
+                    <button
+                        onClick={onSendToBack} title="Send to Back"
+                        style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '6px', borderRadius: '4px', transition: 'background 0.2s' }}
+                        onMouseOver={e => e.currentTarget.style.background = '#f1f3f5'} onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                    >⬇️</button>
+
+                    <div style={{ width: '1px', height: '16px', background: '#dcdfe4', margin: '0 4px' }} />
+
+                    <button
+                        onClick={onDelete} title="Delete Element"
+                        style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '6px', borderRadius: '4px', color: '#d32f2f', transition: 'background 0.2s' }}
+                        onMouseOver={e => e.currentTarget.style.background = '#ffebee'} onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                    >🗑️</button>
                 </div>
             )}
 
             {children}
-            {showControls && onResizeEnd && (
+
+            {isActive && onResizeEnd && (
                 <div
                     onPointerDown={handleResizeDown}
                     onPointerMove={handleResizeMove}
                     onPointerUp={handleResizeUp}
                     style={{
                         position: 'absolute',
-                        left: `${pos.x}%`,
-                        top: `${pos.y}%`,
-                        zIndex: zIndex,
-                        width: width ? `${width}%` : 'max-content',
-                        cursor: isDragging ? 'grabbing' : 'grab',
-                        outline: showControls ? '2px dashed #d83b01' : '2px dashed transparent',
-                        outlineOffset: '4px',
-                        transition: (isDragging || isResizing) ? 'none' : 'outline 0.2s',
+                        bottom: '-6px',
+                        right: '-6px',
+                        width: '14px',
+                        height: '14px',
+                        background: '#ffffff',
+                        border: '3px solid #d83b01',
+                        borderRadius: '50%',
+                        cursor: 'nwse-resize',
+                        zIndex: 10,
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
                     }}
-                    title="Drag to resize"
                 />
             )}
         </div>

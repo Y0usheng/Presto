@@ -117,7 +117,7 @@ function LandingPage() {
                 padding="10px 20px"
                 size="1.2rem"
                 rotate="-5deg"
-                shadow={true}
+                $shadow={true}
               >
                 Drag us around! 🖱️
               </Sticker>
@@ -130,7 +130,7 @@ function LandingPage() {
                 padding="8px 16px"
                 size="1rem"
                 rotate="10deg"
-                shadow={true}
+                $shadow={true}
               >
                 #Creative
               </Sticker>

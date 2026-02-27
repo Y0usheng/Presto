@@ -1,8 +1,9 @@
 // src/pages/Presentation/PresentationPage.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { usePresentation } from '../../hooks/usePresentation';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import html2canvas from 'html2canvas';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import {
   EditorWrapper, TopBar, TitleInput, ActionButton, Workspace,
@@ -24,7 +25,7 @@ function PresentationPage() {
 
   // 1. 数据逻辑 Hook（完美接管了所有的 fetch 和 state 更新）
   const {
-    slides, setSlides, currentSlideIndex, title, loading,
+    slides, setSlides, currentSlideIndex, title, thumbnail, loading, // 👈 这里必须要有 thumbnail
     updateStoreWithSlides, handleTitleChange, addSlide, deleteSlide, nextSlide, prevSlide
   } = usePresentation(id);
 
@@ -32,6 +33,8 @@ function PresentationPage() {
   useEffect(() => {
     if (title) setLocalTitle(title);
   }, [title]);
+
+  const [activeElementIndex, setActiveElementIndex] = useState(null);
 
   // 2. 五大 Modal 的开关与数据状态管理
   const [textModalConfig, setTextModalConfig] = useState({ isOpen: false, initialData: null, editIndex: null });
@@ -134,6 +137,30 @@ function PresentationPage() {
     await updateStoreWithSlides(updatedSlides);
   };
 
+  // Element Layer Control (Bring to Front / Send to Back)
+  const handleLayerChange = async (elementIndex, action) => {
+    const updatedSlides = slides.map((slide, index) => {
+      if (index !== currentSlideIndex) return slide;
+
+      const newElements = [...(slide.elements || [])];
+      //
+      const allLayers = newElements.map((el, i) => el.layer !== undefined ? el.layer : i);
+
+      if (action === 'front') {
+        const maxLayer = Math.max(...allLayers, 0);
+        newElements[elementIndex] = { ...newElements[elementIndex], layer: maxLayer + 1 };
+      } else if (action === 'back') {
+        const minLayer = Math.min(...allLayers, 0);
+        newElements[elementIndex] = { ...newElements[elementIndex], layer: minLayer - 1 };
+      }
+
+      return { ...slide, elements: newElements };
+    });
+
+    setSlides(updatedSlides);
+    await updateStoreWithSlides(updatedSlides);
+  };
+
   if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading Editor...</div>;
 
   return (
@@ -187,7 +214,11 @@ function PresentationPage() {
 
         {/* 中央 16:9 画布区 */}
         <CanvasArea>
-          <SlideCanvas id="slide-canvas-container" $bg={slides[currentSlideIndex]?.background || '#ffffff'}>
+          <SlideCanvas
+            id="slide-canvas-container"
+            $bg={slides[currentSlideIndex]?.background || '#ffffff'}
+            onPointerDown={() => setActiveElementIndex(null)}
+          >
 
             {/* 动态渲染幻灯片元素 (支持绝对定位和双击编辑) */}
             {slides[currentSlideIndex]?.elements?.map((element, index) => {
@@ -197,6 +228,10 @@ function PresentationPage() {
                 return (
                   <DraggableElement
                     key={element.id || index}
+                    isActive={activeElementIndex === index}
+                    onSelect={() => setActiveElementIndex(index)}
+                    onBringToFront={() => handleLayerChange(index, 'front')}
+                    onSendToBack={() => handleLayerChange(index, 'back')}
                     initialPosition={element.position}
                     initialWidth={element.size}
                     zIndex={element.layer || index}
@@ -228,6 +263,10 @@ function PresentationPage() {
                 return (
                   <DraggableElement
                     key={element.id || index}
+                    isActive={activeElementIndex === index}
+                    onSelect={() => setActiveElementIndex(index)}
+                    onBringToFront={() => handleLayerChange(index, 'front')}
+                    onSendToBack={() => handleLayerChange(index, 'back')}
                     initialPosition={element.position}
                     initialWidth={element.size}
                     zIndex={element.layer || index}
@@ -255,6 +294,10 @@ function PresentationPage() {
                 return (
                   <DraggableElement
                     key={element.id || index}
+                    isActive={activeElementIndex === index}
+                    onSelect={() => setActiveElementIndex(index)}
+                    onBringToFront={() => handleLayerChange(index, 'front')}
+                    onSendToBack={() => handleLayerChange(index, 'back')}
                     initialPosition={element.position}
                     initialWidth={element.size}
                     zIndex={element.layer || index}
@@ -301,6 +344,10 @@ function PresentationPage() {
                 return (
                   <DraggableElement
                     key={element.id || index}
+                    isActive={activeElementIndex === index}
+                    onSelect={() => setActiveElementIndex(index)}
+                    onBringToFront={() => handleLayerChange(index, 'front')}
+                    onSendToBack={() => handleLayerChange(index, 'back')}
                     initialPosition={element.position}
                     initialWidth={element.size}
                     zIndex={element.layer || index}

@@ -69,12 +69,28 @@ function PresentationPage() {
 
   // 处理元素拖拽结束后的位置保存
   const handleDragEnd = async (elementIndex, newPosition) => {
+    const updatedSlides = slides.map((slide, index) => {
+      if (index !== currentSlideIndex) return slide;
+
+      const newElements = [...(slide.elements || [])];
+      // 更新拖拽后的新坐标
+      newElements[elementIndex] = { ...newElements[elementIndex], position: newPosition };
+
+      return { ...slide, elements: newElements };
+    });
+
+    setSlides(updatedSlides);
+    await updateStoreWithSlides(updatedSlides);
+  };
+
+  const handleDeleteElement = async (elementIndex) => {
     const confirmDelete = window.confirm("Are you sure you want to delete this element?");
     if (!confirmDelete) return;
 
     const updatedSlides = slides.map((slide, index) => {
       if (index !== currentSlideIndex) return slide;
 
+      // 过滤掉被删掉的那个元素
       const newElements = slide.elements.filter((_, i) => i !== elementIndex);
       return { ...slide, elements: newElements };
     });
@@ -223,15 +239,35 @@ function PresentationPage() {
                     onDragEnd={(newPos) => handleDragEnd(index, newPos)}
                     onResizeEnd={(newWidth) => handleResizeEnd(index, newWidth)}
                     onDelete={() => handleDeleteElement(index)}
-                    onDoubleClick={() => setVideoModalConfig({ isOpen: true, initialData: element, editIndex: index })}
                   >
-                    <div style={{ width: '100%', aspectRatio: '16/9', pointerEvents: 'none' }}>
+                    <div style={{ width: '100%', aspectRatio: '16/9', position: 'relative' }}>
+                      <div
+                        style={{
+                          position: 'absolute', top: 0, left: 0, right: 0, height: '35px',
+                          background: 'linear-gradient(to bottom, rgba(0,0,0,0.6), transparent)',
+                          zIndex: 2, display: 'flex', justifyContent: 'center', alignItems: 'flex-start',
+                          paddingTop: '6px', opacity: 0, transition: 'opacity 0.2s',
+                          cursor: 'grab', color: '#fff', fontSize: '12px', fontWeight: 'bold'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
+                        onMouseLeave={(e) => e.currentTarget.style.opacity = 0}
+                        onDoubleClick={() => setVideoModalConfig({ isOpen: true, initialData: element, editIndex: index })}
+                        title="Drag me, or Double-click to edit"
+                      >
+                        <span style={{ background: 'rgba(0,0,0,0.5)', padding: '2px 8px', borderRadius: '12px', pointerEvents: 'none' }}>
+                          ✋ Drag / Double-click to Edit
+                        </span>
+                      </div>
+
+                      {/* 视频本体：恢复 pointerEvents 为 auto，允许用户点击播放！ */}
                       <iframe
                         src={element.source}
                         width="100%"
                         height="100%"
-                        style={{ border: 'none' }}
+                        style={{ border: 'none', pointerEvents: 'auto', zIndex: 1, position: 'relative' }}
                         title="slide-video"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
                       />
                     </div>
                   </DraggableElement>

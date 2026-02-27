@@ -7,27 +7,39 @@ const style = {
     top: '50%',
     left: '50%',
     transform: 'translate(-50%, -50%)',
-    width: 400,
+    width: 450,
     bgcolor: 'background.paper',
     boxShadow: 24,
     p: 4,
-    borderRadius: '12px', /* 圆角更贴合现在的现代 UI */
+    borderRadius: '12px',
 };
 
 export default function BackgroundModal({ open, onClose, onSave, currentBackground }) {
     const [background, setBackground] = useState('#ffffff');
 
-    // 当模态框打开时，读取当前幻灯片的背景
     useEffect(() => {
         if (open) {
             setBackground(currentBackground || '#ffffff');
         }
     }, [open, currentBackground]);
 
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setBackground(`url(${reader.result})`);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const handleSave = () => {
         onSave(background);
         onClose();
     };
+
+    const isImage = background.startsWith('url');
 
     return (
         <Modal open={open} onClose={onClose}>
@@ -36,38 +48,71 @@ export default function BackgroundModal({ open, onClose, onSave, currentBackgrou
                     Edit Slide Background
                 </Typography>
 
-                <TextField
-                    fullWidth
-                    label="Background (Color Code, Gradient or URL)"
-                    value={background}
-                    onChange={(e) => setBackground(e.target.value)}
-                    margin="normal"
-                    helperText="e.g. #f6f8fd, linear-gradient(...), or url(...)"
-                />
+                <div style={{ marginTop: '15px' }}>
+                    <Typography variant="body2" style={{ color: '#5e6d77', fontWeight: 600 }}>Solid Color / CSS Code:</Typography>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
+                        <input
+                            type="color"
+                            value={/^#[0-9A-Fa-f]{6}$/i.test(background) ? background : '#ffffff'}
+                            onChange={(e) => setBackground(e.target.value)}
+                            style={{ cursor: 'pointer', width: '40px', height: '40px', border: 'none', padding: 0, background: 'transparent', opacity: isImage ? 0.3 : 1 }}
+                            disabled={isImage}
+                        />
+                        <TextField
+                            fullWidth
+                            size="small"
+                            value={isImage ? 'Image Background Applied' : background}
+                            onChange={(e) => setBackground(e.target.value)}
+                            disabled={isImage}
+                        />
+                    </div>
+                </div>
 
-                {/* 提供一个可视化的原生颜色选择器，提升体验 */}
-                <div style={{ marginTop: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '14px', color: '#5e6d77' }}>Quick pick a solid color:</span>
-                    <input
-                        type="color"
-                        // 为了防止用户填了 url() 导致原生取色器报错，做个简单的正则匹配
-                        value={/^#[0-9A-Fa-f]{6}$/i.test(background) ? background : '#ffffff'}
-                        onChange={(e) => setBackground(e.target.value)}
-                        style={{
-                            cursor: 'pointer',
-                            width: '40px',
-                            height: '40px',
-                            border: 'none',
-                            padding: 0,
-                            background: 'transparent'
-                        }}
-                    />
+                <Typography variant="body2" align="center" style={{ margin: '20px 0', color: '#a0abb2', fontWeight: 600 }}>
+                    — OR —
+                </Typography>
+
+                <div>
+                    <Typography variant="body2" style={{ color: '#5e6d77', fontWeight: 600, marginBottom: '10px' }}>Background Image:</Typography>
+                    <Button
+                        variant="outlined"
+                        component="label"
+                        fullWidth
+                        style={{ borderStyle: 'dashed', borderWidth: '2px', borderColor: '#e2e6ea', color: '#5e6d77', textTransform: 'none', padding: '10px', fontWeight: 'bold' }}
+                    >
+                        📂 Upload Image from Computer
+                        <input type="file" hidden accept="image/*" onChange={handleFileChange} />
+                    </Button>
+
+                    {isImage && (
+                        <Box mt={2}>
+                            <Box
+                                style={{
+                                    height: '140px',
+                                    borderRadius: '8px',
+                                    border: '1px solid #e2e6ea',
+                                    backgroundImage: background,
+                                    backgroundSize: 'cover',
+                                    backgroundPosition: 'center',
+                                    boxShadow: 'inset 0 0 10px rgba(0,0,0,0.1)'
+                                }}
+                            />
+                            <Button
+                                color="error"
+                                fullWidth
+                                onClick={() => setBackground('#ffffff')}
+                                style={{ marginTop: '10px', textTransform: 'none', fontWeight: 'bold' }}
+                            >
+                                🗑️ Remove Image & Reset to White
+                            </Button>
+                        </Box>
+                    )}
                 </div>
 
                 <Button
                     variant="contained"
                     onClick={handleSave}
-                    style={{ marginTop: '24px', backgroundColor: '#d83b01', width: '100%' }}
+                    style={{ marginTop: '24px', backgroundColor: '#d83b01', width: '100%', padding: '12px', fontWeight: 'bold' }}
                 >
                     Apply Background
                 </Button>

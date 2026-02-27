@@ -5,9 +5,50 @@ import { api } from '../../utils/api';
 import {
   DashboardWrapper, TopBar, Logo, LogoutButton, MainContent,
   Greeting, GridContainer, Card, CreateCard, CreateIcon, CreateText,
-  ThumbnailArea, CardBody, PresentationTitle, SlideCount,
-  CardActions, ActionButton, ModalOverlay, ModalContent, ModalInput, ModalButtonGroup
+  ThumbnailWrapper, HoverOverlay, OverlayButton, CardFooter, PresentationTitle, SlideCount, DeleteIconBtn,
+  ModalOverlay, ModalContent, ModalInput, ModalButtonGroup, ActionButton
 } from './Dashboard.styles';
+
+const SlideThumbnail = ({ slide }) => {
+  if (!slide) return null;
+
+  return (
+    <div style={{
+      width: '100%',
+      height: '100%',
+      background: slide.background?.startsWith('url') ? slide.background : (slide.background || '#ffffff'),
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      position: 'relative',
+      fontSize: '6px',
+      overflow: 'hidden'
+    }}>
+      {slide.elements?.map((el, i) => {
+        const baseStyle = {
+          position: 'absolute',
+          left: `${el.position?.x}%`,
+          top: `${el.position?.y}%`,
+          width: el.size ? `${el.size}%` : 'max-content',
+          zIndex: el.layer || i,
+        };
+
+        if (el.type === 'text') {
+          return <div key={i} style={{ ...baseStyle, fontSize: `${el.fontSize * 1.5}em`, color: el.color, fontFamily: el.fontFamily, fontWeight: el.isBold ? 'bold' : 'normal', fontStyle: el.isItalic ? 'italic' : 'normal', whiteSpace: 'pre-wrap', lineHeight: '1.2' }}>{el.text}</div>;
+        }
+        if (el.type === 'image') {
+          return <img key={i} src={el.source} alt="" style={{ ...baseStyle, height: 'auto' }} />;
+        }
+        if (el.type === 'video') {
+          return <div key={i} style={{ ...baseStyle, aspectRatio: '16/9', background: '#0e1318', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '4px' }}>▶️ Video</div>;
+        }
+        if (el.type === 'code') {
+          return <div key={i} style={{ ...baseStyle, background: '#282c34', color: '#abb2bf', padding: '4px', borderRadius: '2px', fontSize: '1.5em', borderLeft: '2px solid #61dafb' }}>{'</>'} Code</div>;
+        }
+        return null;
+      })}
+    </div>
+  );
+};
 
 function Dashboard() {
   const [presentations, setPresentations] = useState([]);
@@ -19,17 +60,12 @@ function Dashboard() {
     const fetchPresentations = async () => {
       try {
         const data = await api.getStore();
-
-        // 🚨 核心 Bug 修复区 🚨
-        // 如果 data.store 是空对象 {} 或者 null（新用户），强制给一个空数组 []
         const storeData = data.store;
         if (Array.isArray(storeData)) {
           setPresentations(storeData);
         } else if (storeData && Array.isArray(storeData.presentations)) {
-          // 有些后端的写法可能会包裹一层
           setPresentations(storeData.presentations);
         } else {
-          // 兜底方案：如果是新用户，保证状态是一个空数组
           setPresentations([]);
         }
       } catch (error) {
@@ -47,13 +83,12 @@ function Dashboard() {
   const handleCreate = async () => {
     if (!newTitle.trim()) return;
 
-    // 给新项目生成一个独立 ID (时间戳)
     const newPresentation = {
       id: Date.now(),
       title: newTitle,
       thumbnail: '',
       description: '',
-      slides: [{ elements: [] }] // 默认自带第一张幻灯片
+      slides: [{ elements: [], background: '' }]
     };
 
     const updatedList = [...presentations, newPresentation];
@@ -62,7 +97,7 @@ function Dashboard() {
       await api.updateStore(updatedList);
       setPresentations(updatedList);
       setIsModalOpen(false);
-      setNewTitle(''); // 清空输入框
+      setNewTitle('');
     } catch (error) {
       console.error('Error creating presentation:', error);
     }
@@ -72,7 +107,6 @@ function Dashboard() {
     const confirmDelete = window.confirm("Are you sure you want to delete this presentation?");
     if (!confirmDelete) return;
 
-    // 过滤掉被删掉的项目
     const updatedList = presentations.filter(p => p.id !== idToDelete);
     try {
       await api.updateStore(updatedList);
@@ -84,7 +118,6 @@ function Dashboard() {
 
   return (
     <DashboardWrapper>
-      {/* 顶部导航栏 */}
       <TopBar>
         <Logo onClick={() => navigate('/')}>
           <svg width="24" height="24" viewBox="0 0 24 24">
@@ -97,11 +130,9 @@ function Dashboard() {
       </TopBar>
 
       <MainContent>
-        {/* 大字号欢迎语 */}
         <Greeting>What will you design today?</Greeting>
 
         <GridContainer>
-          {/* 永远放在第一位的“新建设计”虚线卡片 */}
           <CreateCard onClick={() => setIsModalOpen(true)}>
             <div style={{ textAlign: 'center' }}>
               <CreateIcon>+</CreateIcon>
@@ -109,46 +140,48 @@ function Dashboard() {
             </div>
           </CreateCard>
 
-          {/* 渲染后端返回的项目列表 */}
-          {presentations.map((presentation) => (
-            <Card key={presentation.id}>
-              {/* 封面图区域，点击也能直接编辑 */}
-              <ThumbnailArea
-                $bgImage={presentation.thumbnail}
-                onClick={() => navigate(`/presentation/${presentation.id}`)}
-              >
-                {!presentation.thumbnail && 'No Thumbnail'}
-              </ThumbnailArea>
+          {presentations.map((presentation) => {
+            return (
+              <Card key={presentation.id}>
+                <ThumbnailWrapper>
 
-              <CardBody>
-                <PresentationTitle title={presentation.title}>
-                  {presentation.title || 'Untitled Design'}
-                </PresentationTitle>
-                <SlideCount>
-                  {presentation.slides ? presentation.slides.length : 1} slide(s)
-                </SlideCount>
+                  <SlideThumbnail slide={presentation.slides?.[0]} />
 
-                <CardActions>
-                  <ActionButton $primary onClick={() => navigate(`/presentation/${presentation.id}`)}>
-                    Edit
-                  </ActionButton>
-                  <ActionButton onClick={() => navigate(`/preview/${presentation.id}`)}>
-                    Play
-                  </ActionButton>
-                  <ActionButton $danger onClick={() => handleDelete(presentation.id)}>
-                    Del
-                  </ActionButton>
-                </CardActions>
-              </CardBody>
-            </Card>
-          ))}
+                  <HoverOverlay className="hover-overlay">
+                    <OverlayButton $primary onClick={() => navigate(`/presentation/${presentation.id}`)}>
+                      ✏️ Edit
+                    </OverlayButton>
+                    <OverlayButton onClick={() => navigate(`/preview/${presentation.id}`)}>
+                      ▶️ Play
+                    </OverlayButton>
+                  </HoverOverlay>
+
+                </ThumbnailWrapper>
+
+                <CardFooter>
+                  <div>
+                    <PresentationTitle title={presentation.title}>
+                      {presentation.title || 'Untitled Design'}
+                    </PresentationTitle>
+                    <SlideCount>
+                      {presentation.slides ? presentation.slides.length : 1} slide(s)
+                    </SlideCount>
+                  </div>
+
+                  <DeleteIconBtn onClick={() => handleDelete(presentation.id)} title="Delete presentation">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+                    </svg>
+                  </DeleteIconBtn>
+                </CardFooter>
+              </Card>
+            );
+          })}
         </GridContainer>
       </MainContent>
 
-      {/* 点击新建弹出的漂亮弹窗 */}
       {isModalOpen && (
         <ModalOverlay onClick={() => setIsModalOpen(false)}>
-          {/* e.stopPropagation 阻止点击弹窗内容时关闭弹窗 */}
           <ModalContent onClick={e => e.stopPropagation()}>
             <h2 style={{ margin: '0 0 10px 0', color: '#0e1318' }}>Create a new presentation</h2>
             <p style={{ margin: '0', color: '#5e6d77', fontSize: '14px' }}>Give your awesome design a name to get started.</p>
@@ -159,7 +192,7 @@ function Dashboard() {
               placeholder="e.g. Q4 Marketing Plan"
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleCreate()} /* 回车键快速新建 */
+              onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
             />
 
             <ModalButtonGroup>

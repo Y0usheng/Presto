@@ -3,8 +3,8 @@ import styled from 'styled-components';
 
 export const DashboardWrapper = styled.div`
   min-height: 100vh;
-  background-color: #f6f8fd; /* 类似 Canva 的极简灰白背景 */
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: #f6f8fd;
+  font-family: 'Inter', -apple-system, sans-serif;
 `;
 
 export const TopBar = styled.nav`
@@ -28,10 +28,7 @@ export const Logo = styled.div`
   align-items: center;
   gap: 8px;
   cursor: pointer;
-
-  svg {
-    fill: #d83b01; /* 保持橙红配色 */
-  }
+  svg { fill: #d83b01; }
 `;
 
 export const LogoutButton = styled.button`
@@ -43,11 +40,7 @@ export const LogoutButton = styled.button`
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
-
-  &:hover {
-    background: #f1f3f5;
-    color: #0e1318;
-  }
+  &:hover { background: #f1f3f5; color: #0e1318; }
 `;
 
 export const MainContent = styled.main`
@@ -65,20 +58,20 @@ export const Greeting = styled.h1`
 
 export const GridContainer = styled.div`
   display: grid;
-  /* 响应式网格：无论屏幕多大，卡片都能自动排列 */
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); 
   gap: 24px;
 `;
 
 export const Card = styled.div`
   background: #ffffff;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
   transition: transform 0.2s, box-shadow 0.2s;
   position: relative;
   display: flex;
   flex-direction: column;
+  border: 1px solid #e2e6ea;
 
   &:hover {
     transform: translateY(-4px);
@@ -86,7 +79,6 @@ export const Card = styled.div`
   }
 `;
 
-// Canva 标志性的虚线新建按钮卡片
 export const CreateCard = styled(Card)`
   background: linear-gradient(135deg, rgba(216, 59, 1, 0.05) 0%, rgba(216, 59, 1, 0.01) 100%);
   border: 2px dashed rgba(216, 59, 1, 0.4);
@@ -122,25 +114,58 @@ export const CreateText = styled.div`
   font-size: 1.1rem;
 `;
 
-// 项目预览图区域
-export const ThumbnailArea = styled.div`
-  height: 140px;
-  background: #e8ecef;
-  background-image: ${props => props.$bgImage ? `url(${props.$bgImage})` : 'none'};
-  background-size: cover;
-  background-position: center;
+export const ThumbnailWrapper = styled.div`
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid #e2e6ea;
+  background: #ffffff;
+  &:hover .hover-overlay {
+    opacity: 1;
+  }
+`;
+
+export const HoverOverlay = styled.div`
+  className: hover-overlay; 
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #a0abb2;
-  cursor: pointer;
+  gap: 12px;
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+  z-index: 50;
 `;
 
-export const CardBody = styled.div`
+export const OverlayButton = styled.button`
+  background: ${props => props.$primary ? '#d83b01' : 'rgba(255,255,255,0.2)'};
+  color: #ffffff;
+  border: 1px solid ${props => props.$primary ? '#d83b01' : 'rgba(255,255,255,0.4)'};
+  padding: 8px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  &:hover {
+    background: ${props => props.$primary ? '#b83201' : 'rgba(255,255,255,0.3)'};
+    transform: scale(1.05);
+  }
+`;
+
+export const CardFooter = styled.div`
   padding: 16px;
   display: flex;
-  flex-direction: column;
-  flex: 1;
+  justify-content: space-between;
+  align-items: flex-start;
+  background: #ffffff;
 `;
 
 export const PresentationTitle = styled.h3`
@@ -150,85 +175,51 @@ export const PresentationTitle = styled.h3`
   margin: 0 0 4px 0;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis; /* 文字过长显示省略号 */
+  text-overflow: ellipsis;
+  max-width: 180px;
 `;
 
 export const SlideCount = styled.p`
   font-size: 0.85rem;
   color: #5e6d77;
-  margin: 0 0 16px 0;
+  margin: 0;
 `;
 
-export const CardActions = styled.div`
-  display: flex;
-  gap: 8px;
-  margin-top: auto;
-`;
-
-export const ActionButton = styled.button`
-  flex: 1;
-  padding: 6px 0;
-  font-size: 0.85rem;
-  font-weight: 600;
-  border-radius: 4px;
+export const DeleteIconBtn = styled.button`
+  background: transparent;
+  color: #a0abb2;
+  border: none;
   cursor: pointer;
-  border: 1px solid transparent;
+  padding: 6px;
+  border-radius: 6px;
   transition: all 0.2s;
 
-  ${props => props.$primary ? `
-    background: #d83b01;
-    color: white;
-    &:hover { background: #b83201; }
-  ` : props.$danger ? `
-    background: transparent;
+  &:hover {
+    background: #ffebee;
     color: #d32f2f;
-    border-color: #f8d7da;
-    &:hover { background: #ffebee; }
-  ` : `
-    background: #f1f3f5;
-    color: #0e1318;
-    &:hover { background: #e2e6ea; }
-  `}
+  }
 `;
 
-// 精美的新建弹窗
 export const ModalOverlay = styled.div`
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  backdrop-filter: blur(4px);
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5); display: flex; align-items: center; justifyContent: center;
+  z-index: 1000; backdrop-filter: blur(4px);
 `;
 
 export const ModalContent = styled.div`
-  background: white;
-  padding: 30px;
-  border-radius: 12px;
-  width: 100%;
-  max-width: 400px;
+  background: white; padding: 30px; border-radius: 12px; width: 100%; max-width: 400px;
   box-shadow: 0 20px 40px rgba(0,0,0,0.2);
 `;
 
 export const ModalInput = styled.input`
-  width: 100%;
-  padding: 12px;
-  border: 2px solid #e2e6ea;
-  border-radius: 6px;
-  margin: 20px 0;
-  font-size: 16px;
-  box-sizing: border-box;
-
-  &:focus {
-    border-color: #d83b01;
-    outline: none;
-  }
+  width: 100%; padding: 12px; border: 2px solid #e2e6ea; border-radius: 6px; margin: 20px 0; font-size: 16px; box-sizing: border-box;
+  &:focus { border-color: #d83b01; outline: none; }
 `;
 
 export const ModalButtonGroup = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
+  display: flex; justify-content: flex-end; gap: 12px;
+`;
+export const ActionButton = styled.button`
+  padding: 8px 16px; font-weight: 600; border-radius: 4px; cursor: pointer; border: 1px solid transparent; transition: all 0.2s;
+  ${props => props.$primary ? `background: #d83b01; color: white; &:hover { background: #b83201; }` : `background: #f1f3f5; color: #0e1318; &:hover { background: #e2e6ea; }`}
 `;

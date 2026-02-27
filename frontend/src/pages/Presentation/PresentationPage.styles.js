@@ -108,6 +108,8 @@ export const SlideCanvas = styled.div`
   max-width: 960px;
   aspect-ratio: 16 / 9;
   background: ${props => props.$bg || '#ffffff'};
+  background-size: cover;       
+  background-position: center;
   box-shadow: 0 10px 30px rgba(0,0,0,0.08);
   border: 1px solid #e2e6ea;
   position: relative;

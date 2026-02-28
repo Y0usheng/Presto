@@ -27,7 +27,7 @@ function PresentationPage() {
   const {
     slides, currentSlideIndex, title, thumbnail, loading,
     handleTitleChange, addSlide, deleteSlide, nextSlide, prevSlide,
-    saveSlides, undo, redo, canUndo, canRedo
+    saveSlides, undo, redo, canUndo, canRedo, updateStoreWithSlides
   } = usePresentation(id);
 
   const [localTitle, setLocalTitle] = useState('');

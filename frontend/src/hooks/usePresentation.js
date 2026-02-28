@@ -117,6 +117,7 @@ export function usePresentation(id) {
     return {
         presentation, slides, currentSlideIndex, title, thumbnail, loading,
         handleTitleChange, addSlide, deleteSlide, nextSlide, prevSlide,
-        saveSlides, undo, redo, canUndo: past.length > 0, canRedo: future.length > 0 // 👈 暴露出强大的历史 API
+        saveSlides, undo, redo, canUndo: past.length > 0, canRedo: future.length > 0,
+        updateStoreWithSlides
     };
 }

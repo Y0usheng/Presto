@@ -25,8 +25,9 @@ function PresentationPage() {
 
   // 1. 数据逻辑 Hook（完美接管了所有的 fetch 和 state 更新）
   const {
-    slides, setSlides, currentSlideIndex, title, thumbnail, loading, // 👈 这里必须要有 thumbnail
-    updateStoreWithSlides, handleTitleChange, addSlide, deleteSlide, nextSlide, prevSlide
+    slides, currentSlideIndex, title, thumbnail, loading,
+    handleTitleChange, addSlide, deleteSlide, nextSlide, prevSlide,
+    saveSlides, undo, redo, canUndo, canRedo
   } = usePresentation(id);
 
   const [localTitle, setLocalTitle] = useState('');
@@ -35,6 +36,26 @@ function PresentationPage() {
   }, [title]);
 
   const [activeElementIndex, setActiveElementIndex] = useState(null);
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const isModifier = e.ctrlKey || e.metaKey;
+
+      if (isModifier && e.key === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          redo(); // Ctrl + Shift + Z -> 重做
+        } else {
+          undo(); // Ctrl + Z -> 撤销
+        }
+      } else if (isModifier && e.key === 'y') {
+        e.preventDefault();
+        redo();   // Ctrl + Y -> 重做
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [undo, redo]);
 
   // 2. 五大 Modal 的开关与数据状态管理
   const [textModalConfig, setTextModalConfig] = useState({ isOpen: false, initialData: null, editIndex: null });
@@ -59,8 +80,7 @@ function PresentationPage() {
       return { ...slide, elements: newElements };
     });
 
-    setSlides(updatedSlides);
-    await updateStoreWithSlides(updatedSlides);
+    saveSlides(updatedSlides);
   };
 
   const handleManualSave = async () => {
@@ -87,8 +107,8 @@ function PresentationPage() {
       if (index !== currentSlideIndex) return slide;
       return { ...slide, background: newBackground };
     });
-    setSlides(updatedSlides);
-    await updateStoreWithSlides(updatedSlides);
+
+    saveSlides(updatedSlides);
   };
 
   // 处理元素拖拽结束后的位置保存
@@ -103,8 +123,7 @@ function PresentationPage() {
       return { ...slide, elements: newElements };
     });
 
-    setSlides(updatedSlides);
-    await updateStoreWithSlides(updatedSlides);
+    saveSlides(updatedSlides);
   };
 
   const handleDeleteElement = async (elementIndex) => {
@@ -119,8 +138,7 @@ function PresentationPage() {
       return { ...slide, elements: newElements };
     });
 
-    setSlides(updatedSlides);
-    await updateStoreWithSlides(updatedSlides);
+    saveSlides(updatedSlides);
   };
 
   const handleResizeEnd = async (elementIndex, newWidth) => {
@@ -133,8 +151,7 @@ function PresentationPage() {
       return { ...slide, elements: newElements };
     });
 
-    setSlides(updatedSlides);
-    await updateStoreWithSlides(updatedSlides);
+    saveSlides(updatedSlides);
   };
 
   // Element Layer Control (Bring to Front / Send to Back)
@@ -157,8 +174,7 @@ function PresentationPage() {
       return { ...slide, elements: newElements };
     });
 
-    setSlides(updatedSlides);
-    await updateStoreWithSlides(updatedSlides);
+    saveSlides(updatedSlides);
   };
 
   if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading Editor...</div>;
@@ -169,6 +185,13 @@ function PresentationPage() {
       <TopBar>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <ActionButton onClick={() => navigate('/dashboard')}>Home</ActionButton>
+          {/* 撤销与重做按钮 */}
+          <ActionButton onClick={undo} disabled={!canUndo} style={{ opacity: canUndo ? 1 : 0.5 }}>
+            ↩️ Undo
+          </ActionButton>
+          <ActionButton onClick={redo} disabled={!canRedo} style={{ opacity: canRedo ? 1 : 0.5 }}>
+            ↪️ Redo
+          </ActionButton>
         </div>
 
         <TitleInput

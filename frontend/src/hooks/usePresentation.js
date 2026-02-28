@@ -1,5 +1,5 @@
 // src/hooks/usePresentation.js
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '../utils/api';
 
 export function usePresentation(id) {
@@ -9,6 +9,8 @@ export function usePresentation(id) {
     const [title, setTitle] = useState('');
     const [thumbnail, setThumbnail] = useState('');
     const [loading, setLoading] = useState(true);
+    const [past, setPast] = useState([]);
+    const [future, setFuture] = useState([]);
 
     useEffect(() => {
         const fetchPresentation = async () => {
@@ -23,6 +25,8 @@ export function usePresentation(id) {
                     setSlides(found.slides || [{ elements: [] }]);
                     setTitle(found.title || 'Untitled Design');
                     setThumbnail(found.thumbnail || '');
+                    setPast([]);
+                    setFuture([]);
                 }
             } catch (error) {
                 console.error('Error fetching presentation:', error);
@@ -49,6 +53,35 @@ export function usePresentation(id) {
         }
     };
 
+    const saveSlides = useCallback(async (newSlides) => {
+        setPast(prev => [...prev, slides]);
+        setFuture([]);
+        setSlides(newSlides);
+        await updateStoreWithSlides(newSlides);
+    }, [slides, title, thumbnail, id]);
+
+    const undo = useCallback(async () => {
+        if (past.length === 0) return;
+        const previousSlides = past[past.length - 1];
+        const newPast = past.slice(0, past.length - 1);
+
+        setFuture(prev => [slides, ...prev]);
+        setPast(newPast);
+        setSlides(previousSlides);
+        await updateStoreWithSlides(previousSlides);
+    }, [past, slides, title, thumbnail, id]);
+
+    const redo = useCallback(async () => {
+        if (future.length === 0) return;
+        const nextSlides = future[0];
+        const newFuture = future.slice(1);
+
+        setPast(prev => [...prev, slides]);
+        setFuture(newFuture);
+        setSlides(nextSlides);
+        await updateStoreWithSlides(nextSlides);
+    }, [future, slides, title, thumbnail, id]);
+
     const handleTitleChange = (newTitle) => {
         setTitle(newTitle);
         updateStoreWithSlides(slides, newTitle, thumbnail);
@@ -56,9 +89,8 @@ export function usePresentation(id) {
 
     const addSlide = () => {
         const newSlides = [...slides, { elements: [] }];
-        setSlides(newSlides);
         setCurrentSlideIndex(newSlides.length - 1);
-        updateStoreWithSlides(newSlides);
+        saveSlides(newSlides);
     };
 
     const deleteSlide = () => {
@@ -69,9 +101,8 @@ export function usePresentation(id) {
         const confirmDelete = window.confirm("Are you sure you want to delete this slide?");
         if (confirmDelete) {
             const newSlides = slides.filter((_, index) => index !== currentSlideIndex);
-            setSlides(newSlides);
             setCurrentSlideIndex(Math.max(0, currentSlideIndex - 1));
-            updateStoreWithSlides(newSlides);
+            saveSlides(newSlides);
         }
     };
 
@@ -84,7 +115,8 @@ export function usePresentation(id) {
     };
 
     return {
-        presentation, slides, setSlides, currentSlideIndex, title, thumbnail, loading,
-        updateStoreWithSlides, handleTitleChange, addSlide, deleteSlide, nextSlide, prevSlide
+        presentation, slides, currentSlideIndex, title, thumbnail, loading,
+        handleTitleChange, addSlide, deleteSlide, nextSlide, prevSlide,
+        saveSlides, undo, redo, canUndo: past.length > 0, canRedo: future.length > 0 // 👈 暴露出强大的历史 API
     };
 }

@@ -4,6 +4,7 @@ import express from "express";
 import fs from "fs";
 import swaggerUi from "swagger-ui-express";
 import swaggerDocument from "../swagger.json" with { type: "json" };
+import { put } from '@vercel/blob';
 import { AccessError, InputError } from "./error.js";
 import {
   getEmailFromAuthorization,
@@ -15,7 +16,7 @@ import {
   setStore,
 } from "./service.js";
 const { PROD_BACKEND_PORT, USE_VERCEL_KV } = process.env;
-const { put } = require('@vercel/blob');
+
 const app = express();
 
 app.use(cors());

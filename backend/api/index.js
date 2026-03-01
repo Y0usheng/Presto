@@ -108,9 +108,17 @@ app.get("/", (req, res) => res.redirect("/docs"));
 
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-const port = USE_VERCEL_KV
-  ? PROD_BACKEND_PORT
-  : JSON.parse(fs.readFileSync("../frontend/backend.config.json")).BACKEND_PORT;
+let port = process.env.PORT || 5005;
+
+try {
+  const fileData = fs.readFileSync("../frontend/backend.config.json", "utf8");
+  const config = JSON.parse(fileData);
+  if (config.BACKEND_PORT) {
+    port = config.BACKEND_PORT;
+  }
+} catch (error) {
+  console.log("Running on Vercel: skipped reading local backend.config.json");
+}
 
 app.listen(port, () => {
   console.log(`For API docs, navigate to http://localhost:${port}`);

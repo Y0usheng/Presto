@@ -35,16 +35,20 @@ const update = async (admins) =>
           }
         } else {
           // Store to local file system
-          fs.writeFileSync(
-            DATABASE_FILE,
-            JSON.stringify(
-              {
-                admins,
-              },
-              null,
-              2
-            )
-          );
+          if (!process.env.KV_REST_API_URL) {
+            fs.writeFileSync(
+              DATABASE_FILE,
+              JSON.stringify(
+                {
+                  admins,
+                },
+                null,
+                2
+              )
+            );
+          } else {
+            console.log("Using Vercel KV, skipped writing local database.json");
+          }
         }
         resolve();
       } catch (error) {

@@ -15,7 +15,7 @@ import {
   setStore,
 } from "./service.js";
 const { PROD_BACKEND_PORT, USE_VERCEL_KV } = process.env;
-
+const { put } = require('@vercel/blob');
 const app = express();
 
 app.use(cors());
@@ -113,4 +113,31 @@ const port = USE_VERCEL_KV
 
 app.listen(port, () => {
   console.log(`For API docs, navigate to http://localhost:${port}`);
+});
+
+
+/***************************************************************
+                       Update Thumbnail Function
+***************************************************************/
+app.post('/upload-thumbnail', async (req, res) => {
+  try {
+    const { base64Image } = req.body;
+    if (!base64Image) {
+      return res.status(400).json({ error: 'No image provided' });
+    }
+
+    const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
+    const buffer = Buffer.from(base64Data, 'base64');
+
+    const filename = `thumbnail-${Date.now()}.jpg`;
+    const blob = await put(filename, buffer, {
+      access: 'public',
+      token: process.env.BLOB_READ_WRITE_TOKEN
+    });
+
+    res.json({ url: blob.url });
+  } catch (error) {
+    console.error("Blob upload error:", error);
+    res.status(500).json({ error: 'Failed to upload image' });
+  }
 });

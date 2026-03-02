@@ -50,4 +50,10 @@ export const api = {
             method: 'PUT',
             body: JSON.stringify({ store })
         }),
+
+    uploadThumbnail: (base64Image) =>
+        apiFetch('/upload-thumbnail', {
+            method: 'POST',
+            body: JSON.stringify({ base64Image })
+        }),
 };

@@ -10,7 +10,7 @@ import {
   Sidebar, ToolButton, CanvasArea, SlideCanvas, BottomNav,
   NavText, ControlIconBtn
 } from './PresentationPage.styles';
-
+import { api } from '../../utils/api';
 import TextModal from './components/TextModal';
 import ImageModal from './components/ImageModal';
 import VideoModal from './components/VideoModal';
@@ -85,35 +85,22 @@ function PresentationPage() {
 
   const handleManualSave = async () => {
     const canvasEl = document.getElementById('slide-canvas-container');
-    let newThumbnail = thumbnail; // 默认保留原有的封面 (可能是个 url，也可能是空的)
+    let newThumbnail = thumbnail; // 默认保留原有的封面
 
     if (canvasEl) {
       try {
-        // 1. 依然在前端截图生成 Base64
+        // 1. 在前端截图生成 Base64
         const canvas = await html2canvas(canvasEl, { scale: 0.5, useCORS: true, allowTaint: false });
         const base64 = canvas.toDataURL('image/jpeg', 0.6);
+        const data = await api.uploadThumbnail(base64);
+        newThumbnail = data.url;
 
-        // 2. 发送给后端的 /upload-thumbnail 接口 (请根据你 utils/api.js 的实际封装调整 fetch 的 URL)
-        // 这里假设你的后端跑在和之前一样的 API 地址上
-        const response = await fetch('http://localhost:5005/upload-thumbnail', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`, // 如果你的后端需要鉴权
-          },
-          body: JSON.stringify({ base64Image: base64 })
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          newThumbnail = data.url; // 拿到了干净、轻量级的 Vercel Blob URL！
-        }
       } catch (err) {
         console.error("Failed to capture and upload thumbnail", err);
       }
     }
 
-    // 3. 把这个极短的 URL 连同 PPT 数据一起存入原来的 KV 数据库
+    // 3. 存入 KV 数据库
     await updateStoreWithSlides(slides, localTitle, newThumbnail);
     alert('All changes & thumbnail saved successfully!');
   };
